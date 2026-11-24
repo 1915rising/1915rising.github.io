@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Starfall — a tiny canvas arcade game</title>
+<style>
+  :root {
+    color-scheme: dark;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 16px;
+    background: #05070f;
+    color: #dfe6f3;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 1.6rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+
+  h1 span {
+    color: #ffd75e;
+  }
+
+  canvas {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    background: #070b1a;
+    border: 1px solid #26355c;
+    border-radius: 8px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+  }
+
+  .help {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #93a4c4;
+    text-align: center;
+  }
+
+  .help strong {
+    color: #dfe6f3;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+  <h1>Star<span>fall</span></h1>
+
+  <!-- The game renders entirely into this canvas from game.js. -->
+  <canvas id="game" width="480" height="640" aria-label="Starfall game canvas"></canvas>
+
+  <p class="help">
+    <strong>&larr; &rarr;</strong> or <strong>A / D</strong> to move &nbsp;&middot;&nbsp;
+    <strong>Space</strong> to shoot &nbsp;&middot;&nbsp;
+    <strong>P</strong> to pause &nbsp;&middot;&nbsp;
+    <strong>Enter</strong> to restart
+  </p>
+
+  <script src="game.js"></script>
+</body>
+</html>
