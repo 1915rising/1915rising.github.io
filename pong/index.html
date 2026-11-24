@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pong — 1915 Arcade</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: #0b0e1a;
+    color: #e8eaf6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 16px 40px;
+  }
+  .back {
+    align-self: flex-start;
+    max-width: 860px;
+    width: 100%;
+    margin: 0 auto 10px;
+  }
+  .back a {
+    color: #ffd54f;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+  .back a:hover { text-decoration: underline; }
+  h1 {
+    font-size: 2.2rem;
+    letter-spacing: 3px;
+    color: #ffd54f;
+    text-shadow: 0 0 16px rgba(255, 213, 79, 0.35);
+    margin-bottom: 6px;
+  }
+  .tagline { color: #9fa8c9; margin-bottom: 18px; font-size: 0.98rem; }
+  .stage {
+    width: 100%;
+    max-width: 860px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+  canvas {
+    background: #0e1230;
+    border: 2px solid #262e52;
+    border-radius: 10px;
+    max-width: 100%;
+    height: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+  }
+  .controls-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+  }
+  button {
+    font: inherit;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 9px 18px;
+    cursor: pointer;
+    border: 1px solid #3a467a;
+    background: transparent;
+    color: #9fc3ff;
+  }
+  button:hover { background: #1d2444; }
+  button.primary {
+    background: #ffd54f;
+    border-color: #ffd54f;
+    color: #141414;
+  }
+  button.primary:hover { background: #ffca28; }
+  .help {
+    color: #b8bedd;
+    font-size: 0.92rem;
+    text-align: center;
+    line-height: 1.5;
+  }
+  .help strong { color: #e8eaf6; }
+</style>
+</head>
+<body>
+  <div class="back"><a href="../">&larr; Back to 1915 Arcade</a></div>
+
+  <h1>PONG</h1>
+  <p class="tagline">The original arcade tennis game. First to 7 wins.</p>
+
+  <div class="stage">
+    <canvas id="game" width="800" height="500"></canvas>
+
+    <div class="controls-bar">
+      <button id="btn-ai" class="primary" type="button">Play vs Computer</button>
+      <button id="btn-2p" type="button">Two Players</button>
+      <button id="btn-restart" type="button">Restart</button>
+    </div>
+
+    <p class="help">
+      <strong>Left paddle:</strong> W / S &nbsp;·&nbsp;
+      <strong>Right paddle:</strong> &uarr; / &darr; (two-player mode) &nbsp;·&nbsp;
+      <strong>1</strong> vs Computer &nbsp;·&nbsp; <strong>2</strong> Two Players &nbsp;·&nbsp;
+      <strong>R</strong> Restart
+    </p>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Number Merge — 1915 Arcade</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: #0b0e1a;
+    color: #e8eaf6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 16px 40px;
+  }
+  .back {
+    align-self: flex-start;
+    color: #9fc3ff;
+    text-decoration: none;
+    font-size: 0.95rem;
+    margin-bottom: 10px;
+  }
+  .back:hover { text-decoration: underline; }
+  h1 {
+    font-size: 2.2rem;
+    letter-spacing: 2px;
+    color: #ffd54f;
+    text-shadow: 0 0 18px rgba(255, 213, 79, 0.35);
+    text-align: center;
+  }
+  .tagline { color: #9fa8c9; margin-top: 6px; text-align: center; }
+  .hud {
+    display: flex;
+    gap: 14px;
+    align-items: stretch;
+    margin: 20px 0 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .score-box {
+    background: #151a30;
+    border: 1px solid #262e52;
+    border-radius: 10px;
+    padding: 8px 18px;
+    text-align: center;
+    min-width: 110px;
+  }
+  .score-box .label {
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #9fa8c9;
+  }
+  .score-box .value { font-size: 1.4rem; font-weight: 700; color: #fff; }
+  #restart {
+    background: #ffd54f;
+    color: #141414;
+    border: none;
+    border-radius: 10px;
+    padding: 8px 20px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  #restart:hover { background: #ffca28; }
+  #board-wrap { position: relative; }
+  #board {
+    display: grid;
+    grid-template-columns: repeat(4, 92px);
+    grid-template-rows: repeat(4, 92px);
+    gap: 10px;
+    background: #151a30;
+    border: 1px solid #262e52;
+    border-radius: 12px;
+    padding: 10px;
+    touch-action: none;
+    user-select: none;
+  }
+  .cell {
+    background: #1d2444;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: #e8eaf6;
+  }
+  /* One distinct color per tile value */
+  .v2    { background: #2b3a67; }
+  .v4    { background: #35507e; color: #fff; }
+  .v8    { background: #b26a1b; color: #fff; }
+  .v16   { background: #c9511f; color: #fff; }
+  .v32   { background: #b02a30; color: #fff; }
+  .v64   { background: #8e1f38; color: #fff; }
+  .v128  { background: #6d4fa1; color: #ffd54f; font-size: 1.7rem; }
+  .v256  { background: #553d8f; color: #ffd54f; font-size: 1.7rem; }
+  .v512  { background: #2e6e5e; color: #ffd54f; font-size: 1.7rem; }
+  .v1024 { background: #1f7a4d; color: #fff; font-size: 1.45rem; }
+  .v2048 { background: #ffd54f; color: #141414; font-size: 1.45rem;
+           box-shadow: 0 0 22px rgba(255, 213, 79, 0.55); }
+  .vbig  { background: #ffe082; color: #141414; font-size: 1.3rem; }
+  #overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(11, 14, 26, 0.82);
+    border-radius: 12px;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    text-align: center;
+    padding: 20px;
+  }
+  #overlay.show { display: flex; }
+  #overlay .big { font-size: 1.8rem; font-weight: 700; color: #ffd54f; }
+  #overlay .sub { color: #b8bedd; }
+  #overlay button {
+    background: #ffd54f;
+    color: #141414;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 22px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  #overlay button:hover { background: #ffca28; }
+  .help { color: #5f6890; font-size: 0.9rem; margin-top: 16px; text-align: center; }
+  @media (max-width: 480px) {
+    #board { grid-template-columns: repeat(4, 70px); grid-template-rows: repeat(4, 70px); }
+    .cell { font-size: 1.4rem; }
+  }
+</style>
+</head>
+<body>
+  <a class="back" href="../">&larr; Back to 1915 Arcade</a>
+  <h1>NUMBER MERGE</h1>
+  <p class="tagline">Slide the tiles. Match two of a kind to merge them into double. Reach 2048!</p>
+
+  <div class="hud">
+    <div class="score-box">
+      <div class="label">Score</div>
+      <div class="value" id="score">0</div>
+    </div>
+    <div class="score-box">
+      <div class="label">Best</div>
+      <div class="value" id="best">0</div>
+    </div>
+    <button id="restart" type="button">Restart</button>
+  </div>
+
+  <div id="board-wrap">
+    <div id="board" aria-label="Number Merge board"></div>
+    <div id="overlay">
+      <div class="big" id="overlay-title">Game Over</div>
+      <div class="sub" id="overlay-text"></div>
+      <button id="overlay-button" type="button">Play Again</button>
+    </div>
+  </div>
+
+  <p class="help">Controls: Arrow keys or WASD to slide &middot; Swipe on touch screens &middot; R to restart</p>
+
+  <script src="game.js"></script>
+</body>
+</html>

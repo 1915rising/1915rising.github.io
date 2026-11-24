@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Skyflap — 1915 Arcade</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: #0b0e1a;
+    color: #e8eaf6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .wrap { width: 100%; max-width: 460px; padding: 18px 16px 32px; }
+  .back {
+    color: #9fc3ff;
+    text-decoration: none;
+    font-size: 0.95rem;
+  }
+  .back:hover { text-decoration: underline; }
+  h1 {
+    text-align: center;
+    font-size: 2rem;
+    letter-spacing: 2px;
+    color: #ffd54f;
+    margin: 12px 0 4px;
+  }
+  .hud {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.05rem;
+    margin: 8px 2px 10px;
+  }
+  .hud b { color: #ffd54f; }
+  canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #0b0e1a;
+    border: 1px solid #262e52;
+    border-radius: 10px;
+    touch-action: manipulation;
+  }
+  .help {
+    text-align: center;
+    color: #9fa8c9;
+    font-size: 0.92rem;
+    margin-top: 12px;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="../">← Back to 1915 Arcade</a>
+    <h1>SKYFLAP</h1>
+    <div class="hud">
+      <span>Score: <b id="score">0</b></span>
+      <span>Best: <b id="best">0</b></span>
+    </div>
+    <canvas id="game" width="420" height="640"></canvas>
+    <p class="help">Click, tap, or press <b>Space</b> to flap. Thread the gates — each one you clear is +1. Don't clip a gate, the ground, or the ceiling.</p>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>

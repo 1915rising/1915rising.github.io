@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minesweeper — 1915 Arcade</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: #0b0e1a;
+    color: #e8eaf6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 48px;
+  }
+  .back {
+    align-self: flex-start;
+    color: #ffd54f;
+    text-decoration: none;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+  .back:hover { text-decoration: underline; }
+  h1 {
+    font-size: 2rem;
+    letter-spacing: 2px;
+    color: #ffd54f;
+    text-shadow: 0 0 14px rgba(255, 213, 79, 0.35);
+    margin-bottom: 6px;
+  }
+  .hud {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    margin: 14px 0 16px;
+    font-size: 1.05rem;
+  }
+  .hud .counter { color: #9fc3ff; font-variant-numeric: tabular-nums; }
+  .hud .status { min-width: 170px; text-align: center; font-weight: 600; }
+  #restart {
+    background: #ffd54f;
+    color: #141414;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  #restart:hover { background: #ffca28; }
+  #board {
+    display: grid;
+    grid-template-columns: repeat(9, 38px);
+    gap: 3px;
+    background: #151a30;
+    border: 1px solid #262e52;
+    border-radius: 10px;
+    padding: 10px;
+    user-select: none;
+  }
+  .cell {
+    width: 38px;
+    height: 38px;
+    border: 1px solid #3a467a;
+    border-radius: 5px;
+    background: #1d2444;
+    color: #e8eaf6;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  .cell:hover:not(.revealed) { background: #262e52; }
+  .cell.revealed {
+    background: #0e1230;
+    border-color: #232a4d;
+    cursor: default;
+  }
+  .cell.mine { background: #5c1a1a; }
+  .cell.exploded { background: #b71c1c; }
+  .cell.flagged { color: #ffd54f; }
+  .n1 { color: #64b5f6; } .n2 { color: #81c784; } .n3 { color: #e57373; }
+  .n4 { color: #ba68c8; } .n5 { color: #ffb74d; } .n6 { color: #4db6ac; }
+  .n7 { color: #f06292; } .n8 { color: #90a4ae; }
+  .help {
+    margin-top: 18px;
+    color: #9fa8c9;
+    font-size: 0.92rem;
+    text-align: center;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+  <a class="back" href="../">← Back to 1915 Arcade</a>
+  <h1>MINESWEEPER</h1>
+
+  <div class="hud">
+    <span class="counter">Mines left: <span id="counter">10</span></span>
+    <span class="status" id="status">Good luck!</span>
+    <button id="restart" type="button">Restart</button>
+  </div>
+
+  <div id="board" role="grid" aria-label="Minesweeper board"></div>
+
+  <p class="help">
+    Left-click a square to reveal it. Right-click to place or remove a flag.<br>
+    Your first click is always safe. Reveal every safe square to win — don't hit a mine!
+  </p>
+
+  <script src="game.js"></script>
+</body>
+</html>

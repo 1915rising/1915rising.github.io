@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sprint — 1915 Arcade</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: #0b0e1a;
+    color: #e8eaf6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 16px 40px;
+  }
+  .topbar {
+    width: 100%;
+    max-width: 840px;
+    margin-bottom: 10px;
+  }
+  .topbar a {
+    color: #9fc3ff;
+    text-decoration: none;
+    font-size: 0.95rem;
+  }
+  .topbar a:hover { text-decoration: underline; }
+  h1 {
+    font-size: 2.2rem;
+    letter-spacing: 3px;
+    color: #ffd54f;
+    text-shadow: 0 0 16px rgba(255, 213, 79, 0.35);
+    text-align: center;
+  }
+  .tagline {
+    color: #9fa8c9;
+    text-align: center;
+    margin: 6px 0 18px;
+    font-size: 1rem;
+  }
+  .frame {
+    background: #151a30;
+    border: 1px solid #262e52;
+    border-radius: 12px;
+    padding: 14px;
+    max-width: 840px;
+    width: 100%;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #0e1230;
+    border-radius: 8px;
+  }
+  .help {
+    color: #b8bedd;
+    text-align: center;
+    margin-top: 14px;
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+  .help strong { color: #ffd54f; font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="topbar"><a href="../">&larr; Back to 1915 Arcade</a></div>
+
+  <h1>SPRINT</h1>
+  <p class="tagline">How far can you run? Jump the blocks, duck the bars, beat your best.</p>
+
+  <div class="frame">
+    <canvas id="game" width="800" height="300"></canvas>
+  </div>
+
+  <p class="help">
+    <strong>Space / Click / Tap</strong> — jump (hold for a higher jump) &nbsp;·&nbsp;
+    <strong>&darr; / S</strong> — duck &nbsp;·&nbsp;
+    <strong>Space / Click</strong> — start &amp; restart
+  </p>
+
+  <script src="game.js"></script>
+</body>
+</html>
