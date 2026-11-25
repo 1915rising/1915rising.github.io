@@ -274,9 +274,25 @@ if (typeof document !== "undefined" && typeof window !== "undefined") {
   const nextCanvas = document.getElementById("next");
   const nextCtx = nextCanvas.getContext("2d");
   const scoreEl = document.getElementById("score");
+  const bestEl = document.getElementById("best");
   const linesEl = document.getElementById("lines");
   const levelEl = document.getElementById("level");
   const overlayEl = document.getElementById("overlay");
+
+  const BEST_KEY = "arcade-blockfall-best";
+  let best = 0;
+  try {
+    best = parseInt(window.localStorage.getItem(BEST_KEY), 10) || 0;
+  } catch (e) {
+    best = 0;
+  }
+  function saveBest() {
+    try {
+      window.localStorage.setItem(BEST_KEY, String(best));
+    } catch (e) {
+      // Storage unavailable (e.g. private mode) — best stays in-memory.
+    }
+  }
 
   const game = createGame();
   let dropCounter = 0;
@@ -347,8 +363,22 @@ if (typeof document !== "undefined" && typeof window !== "undefined") {
       const oy = (nextCanvas.height / size - m.length) / 2;
       drawMatrix(nextCtx, cloneMatrix(m), ox, oy, size);
     }
+    // paused indicator
+    if (paused && !game.over) {
+      ctx.fillStyle = "rgba(11, 14, 26, 0.65)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#ffd54f";
+      ctx.font = "700 28px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("PAUSED", canvas.width / 2, canvas.height / 2);
+    }
     // HUD
+    if (game.score > best) {
+      best = game.score;
+      saveBest();
+    }
     scoreEl.textContent = game.score;
+    if (bestEl) bestEl.textContent = best;
     linesEl.textContent = game.lines;
     levelEl.textContent = game.level;
     overlayEl.style.display = game.over ? "flex" : "none";
@@ -370,12 +400,31 @@ if (typeof document !== "undefined" && typeof window !== "undefined") {
 
   document.addEventListener("keydown", (event) => {
     if (game.over) {
-      if (event.key === "Enter") {
+      if (event.key === "Enter" || event.key === "r" || event.key === "R") {
         resetGame(game);
+        paused = false;
         dropCounter = 0;
       }
       return;
     }
+    if (event.key === "r" || event.key === "R") {
+      resetGame(game);
+      paused = false;
+      dropCounter = 0;
+      draw();
+      return;
+    }
+    if (
+      event.key === "p" ||
+      event.key === "P" ||
+      event.key === "Escape"
+    ) {
+      paused = !paused;
+      dropCounter = 0;
+      draw();
+      return;
+    }
+    if (paused) return;
     switch (event.key) {
       case "ArrowLeft":
         movePiece(game, -1);
@@ -401,10 +450,6 @@ if (typeof document !== "undefined" && typeof window !== "undefined") {
         dropCounter = 0;
         event.preventDefault();
         break;
-      case "p":
-      case "P":
-        paused = !paused;
-        break;
       default:
         return;
     }
@@ -414,9 +459,65 @@ if (typeof document !== "undefined" && typeof window !== "undefined") {
 
   document.getElementById("restart").addEventListener("click", () => {
     resetGame(game);
+    paused = false;
     dropCounter = 0;
     draw();
   });
+
+  // Basic touch controls on the whole game container (the canvas alone
+  // is small): tap = rotate, swipe left/right = move, swipe down =
+  // hard drop (matching the Space key).
+  const touchTarget = document.querySelector(".stage") || canvas;
+  let touchStartX = null;
+  let touchStartY = null;
+  touchTarget.addEventListener(
+    "touchstart",
+    (event) => {
+      if (event.target && event.target.closest && event.target.closest("button, a")) return;
+      if (event.touches.length !== 1) return;
+      touchStartX = event.touches[0].clientX;
+      touchStartY = event.touches[0].clientY;
+      event.preventDefault();
+    },
+    { passive: false }
+  );
+  touchTarget.addEventListener(
+    "touchmove",
+    (event) => {
+      event.preventDefault();
+    },
+    { passive: false }
+  );
+  touchTarget.addEventListener(
+    "touchend",
+    (event) => {
+      if (event.target && event.target.closest && event.target.closest("button, a")) return;
+      event.preventDefault();
+      if (touchStartX === null || touchStartY === null) return;
+      const touch = event.changedTouches[0];
+      const dx = touch.clientX - touchStartX;
+      const dy = touch.clientY - touchStartY;
+      touchStartX = null;
+      touchStartY = null;
+      if (game.over || paused) return;
+      const absX = Math.abs(dx);
+      const absY = Math.abs(dy);
+      const THRESHOLD = 24;
+      if (absX < THRESHOLD && absY < THRESHOLD) {
+        rotatePiece(game, 1); // tap
+      } else if (absX >= absY) {
+        const steps = Math.max(1, Math.floor(absX / 30));
+        for (let i = 0; i < steps; i++) movePiece(game, dx > 0 ? 1 : -1);
+      } else if (dy > 0) {
+        hardDrop(game);
+        dropCounter = 0;
+      } else {
+        rotatePiece(game, 1); // swipe up also rotates
+      }
+      draw();
+    },
+    { passive: false }
+  );
 
   requestAnimationFrame(update);
 }

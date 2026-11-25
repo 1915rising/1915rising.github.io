@@ -36,7 +36,30 @@
   var PHASE_OVER = "over";
 
   var state = null;   // built by resetGame()
-  var best = 0;       // best score this session (kept in memory only)
+
+  // Best score, persisted in localStorage (falls back to 0 / in-memory
+  // when storage is unavailable, e.g. private mode or a headless test).
+  var BEST_KEY = "arcade-snake-best";
+
+  function loadBest() {
+    try {
+      if (typeof localStorage !== "undefined") {
+        var saved = parseInt(localStorage.getItem(BEST_KEY), 10);
+        if (!isNaN(saved) && saved > 0) return saved;
+      }
+    } catch (e) { /* storage unavailable: fall through to 0 */ }
+    return 0;
+  }
+
+  function saveBest() {
+    try {
+      if (typeof localStorage !== "undefined") {
+        localStorage.setItem(BEST_KEY, String(best));
+      }
+    } catch (e) { /* storage unavailable: best stays in memory */ }
+  }
+
+  var best = loadBest();
 
   function resetGame() {
     var midY = Math.floor(ROWS / 2);
@@ -53,7 +76,8 @@
       score: 0,
       stepMs: START_STEP_MS,
       phase: PHASE_READY,
-      grown: 0                       // segments owed by apples just eaten
+      grown: 0,                      // segments owed by apples just eaten
+      popups: []                     // floating "+10" score popups
     };
     placeFood();
   }
@@ -132,6 +156,11 @@
       state.score += POINTS_PER_APPLE;
       state.grown += 1;
       state.stepMs = Math.max(MIN_STEP_MS, state.stepMs - STEP_SHRINK_MS);
+      state.popups.push({
+        x: nx, y: ny,
+        text: "+" + POINTS_PER_APPLE,
+        born: nowMs()
+      });
       placeFood();
     }
 
@@ -142,10 +171,19 @@
     }
   }
 
+  function nowMs() {
+    return (typeof performance !== "undefined" && performance.now)
+      ? performance.now()
+      : Date.now();
+  }
+
   function endGame(won) {
     state.phase = PHASE_OVER;
     state.won = won;
-    if (state.score > best) best = state.score;
+    if (state.score > best) {
+      best = state.score;
+      saveBest();
+    }
     showOverlay(won);
     syncHud();
   }
@@ -196,6 +234,29 @@
         var shade = i % 2 === 0 ? "#2e7d32" : "#388e3c";
         drawCell(seg.x, seg.y, shade, 2);
       }
+    }
+
+    // Score popups: float up from the eaten apple and fade out.
+    if (state.popups && state.popups.length > 0) {
+      var popupNow = nowMs();
+      var POPUP_LIFE_MS = 700;
+      ctx.font = "bold 14px 'Segoe UI', system-ui, sans-serif";
+      ctx.textAlign = "center";
+      for (var p = state.popups.length - 1; p >= 0; p--) {
+        var popup = state.popups[p];
+        var popupAge = popupNow - popup.born;
+        if (popupAge >= POPUP_LIFE_MS) {
+          state.popups.splice(p, 1);
+          continue;
+        }
+        var popupT = popupAge / POPUP_LIFE_MS;
+        ctx.globalAlpha = 1 - popupT;
+        ctx.fillStyle = "#ffd54f";
+        ctx.fillText(popup.text,
+          popup.x * CELL + CELL / 2,
+          popup.y * CELL - 2 - popupT * 14);
+      }
+      ctx.globalAlpha = 1;
     }
 
     if (state.phase === PHASE_PAUSED) {
@@ -277,11 +338,61 @@
       if (state.phase === PHASE_READY) state.phase = PHASE_PLAYING;
       return;
     }
-    if (code === "KeyP") {
+    if (code === "KeyP" || code === "Escape") {
       togglePause();
     } else if (code === "KeyR" || code === "Enter") {
       if (state.phase === PHASE_OVER || state.phase === PHASE_PAUSED) restart();
     }
+  }
+
+  // Touch input: swipe on the board to steer (same no-reverse rule as
+  // the keyboard, via queueDirection); a tap restarts from game over.
+  var touchStartX = null;
+  var touchStartY = null;
+  var SWIPE_MIN_PX = 24;
+
+  function onTouchStart(event) {
+    if (event.preventDefault) event.preventDefault();
+    var touch = event.changedTouches && event.changedTouches[0];
+    if (!touch) return;
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+  }
+
+  function onTouchMove(event) {
+    // Stop the page scrolling while playing on the board.
+    if (event.preventDefault) event.preventDefault();
+  }
+
+  function onTouchEnd(event) {
+    if (event.preventDefault) event.preventDefault();
+    if (touchStartX === null || touchStartY === null) return;
+    var touch = event.changedTouches && event.changedTouches[0];
+    var startX = touchStartX;
+    var startY = touchStartY;
+    touchStartX = null;
+    touchStartY = null;
+    if (!touch) return;
+
+    var dx = touch.clientX - startX;
+    var dy = touch.clientY - startY;
+    var adx = Math.abs(dx);
+    var ady = Math.abs(dy);
+
+    if (Math.max(adx, ady) < SWIPE_MIN_PX) {
+      // A tap: restart when the game-over overlay is shown.
+      if (state.phase === PHASE_OVER) restart();
+      return;
+    }
+
+    if (state.phase === PHASE_OVER) return;
+    if (state.phase === PHASE_PAUSED) return;
+    if (adx > ady) {
+      queueDirection(dx > 0 ? 1 : -1, 0);
+    } else {
+      queueDirection(0, dy > 0 ? 1 : -1);
+    }
+    if (state.phase === PHASE_READY) state.phase = PHASE_PLAYING;
   }
 
   // ------------------------------------------------------------------
@@ -327,6 +438,19 @@
       restartBtn.addEventListener("click", restart);
     }
     document.addEventListener("keydown", onKeyDown);
+
+    if (canvas && canvas.addEventListener) {
+      var touchOpts = { passive: false };
+      canvas.addEventListener("touchstart", onTouchStart, touchOpts);
+      canvas.addEventListener("touchmove", onTouchMove, touchOpts);
+      canvas.addEventListener("touchend", onTouchEnd, touchOpts);
+    }
+    // The overlay covers the canvas on game over, so it needs the tap
+    // handlers too for tap-to-restart to land there.
+    if (overlayEl && overlayEl.addEventListener) {
+      overlayEl.addEventListener("touchstart", onTouchStart, { passive: false });
+      overlayEl.addEventListener("touchend", onTouchEnd, { passive: false });
+    }
 
     resetGame();
     syncHud();

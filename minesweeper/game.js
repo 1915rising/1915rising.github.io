@@ -162,11 +162,83 @@ function countMines(game) {
 if (typeof document !== "undefined") {
   const boardEl = document.getElementById("board");
   const counterEl = document.getElementById("counter");
+  const timerEl = document.getElementById("timer");
+  const bestEl = document.getElementById("best");
   const statusEl = document.getElementById("status");
   const restartBtn = document.getElementById("restart");
 
   let game = createGame(ROWS, COLS, MINE_COUNT);
   let cellEls = [];
+
+  /* ---------------- Timer & best time ---------------- */
+  /* The timer starts on the first reveal and stops on win or loss. */
+  const BEST_KEY = "arcade-minesweeper-best";
+  let timerId = null;
+  let startStamp = null;
+
+  function formatTime(totalSeconds) {
+    const m = Math.floor(totalSeconds / 60);
+    const s = totalSeconds % 60;
+    return m + ":" + String(s).padStart(2, "0");
+  }
+
+  function elapsedSeconds() {
+    if (startStamp === null) return 0;
+    return Math.floor((Date.now() - startStamp) / 1000);
+  }
+
+  function startTimer() {
+    if (timerId !== null || startStamp !== null) return;
+    startStamp = Date.now();
+    timerEl.textContent = formatTime(0);
+    timerId = setInterval(() => {
+      timerEl.textContent = formatTime(elapsedSeconds());
+    }, 250);
+  }
+
+  function stopTimer() {
+    if (timerId !== null) {
+      clearInterval(timerId);
+      timerId = null;
+    }
+    timerEl.textContent = formatTime(elapsedSeconds());
+  }
+
+  function resetTimer() {
+    if (timerId !== null) {
+      clearInterval(timerId);
+      timerId = null;
+    }
+    startStamp = null;
+    timerEl.textContent = formatTime(0);
+  }
+
+  function loadBest() {
+    try {
+      const raw = localStorage.getItem(BEST_KEY);
+      if (raw === null) return null;
+      const n = Number(raw);
+      return Number.isFinite(n) && n >= 0 ? Math.floor(n) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function showBest() {
+    const best = loadBest();
+    bestEl.textContent = best === null ? "—" : formatTime(best);
+  }
+
+  /* Record a winning clear time; keeps only the lowest. */
+  function recordBest(seconds) {
+    const best = loadBest();
+    if (best === null || seconds < best) {
+      try {
+        localStorage.setItem(BEST_KEY, String(seconds));
+      } catch (e) { /* storage unavailable — best time just won't persist */ }
+    }
+    showBest();
+  }
 
   function buildBoard() {
     boardEl.innerHTML = "";
@@ -182,6 +254,10 @@ if (typeof document !== "undefined") {
         btn.setAttribute("aria-label", `Row ${r + 1}, column ${c + 1}`);
         btn.addEventListener("click", onReveal);
         btn.addEventListener("contextmenu", onFlag);
+        btn.addEventListener("pointerdown", onPressStart);
+        btn.addEventListener("pointerup", onPressEnd);
+        btn.addEventListener("pointerleave", onPressEnd);
+        btn.addEventListener("pointercancel", onPressEnd);
         boardEl.appendChild(btn);
         rowEls.push(btn);
       }
@@ -226,27 +302,83 @@ if (typeof document !== "undefined") {
   }
 
   function onReveal(event) {
+    /* A completed long-press already flagged this cell; swallow the
+       click the browser fires on release so it doesn't also reveal. */
+    if (suppressClick) {
+      suppressClick = false;
+      return;
+    }
     const r = Number(event.currentTarget.dataset.r);
     const c = Number(event.currentTarget.dataset.c);
     reveal(game, r, c);
+    if (game.started && !game.over) startTimer();
+    if (game.over) {
+      stopTimer();
+      if (game.won) recordBest(elapsedSeconds());
+    }
     render();
   }
 
   function onFlag(event) {
     event.preventDefault();
+    /* A long-press may also make the browser fire contextmenu for the
+       same press; that flag toggle already happened, so ignore it. */
+    if (suppressContextMenu) {
+      suppressContextMenu = false;
+      return;
+    }
     const r = Number(event.currentTarget.dataset.r);
     const c = Number(event.currentTarget.dataset.c);
     toggleFlag(game, r, c);
     render();
   }
 
+  /* -------- Long-press to flag (touch / pen) -------- */
+  /* Quick taps still reveal via the normal click; holding a cell for
+     LONG_PRESS_MS toggles its flag instead. Mouse input is untouched
+     (left-click reveals, right-click flags, as before). */
+  const LONG_PRESS_MS = 450;
+  let pressTimer = null;
+  let pressEl = null;
+  let suppressClick = false;
+  let suppressContextMenu = false;
+
+  function onPressStart(event) {
+    if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
+    const el = event.currentTarget;
+    pressEl = el;
+    el.classList.add("holding");
+    pressTimer = setTimeout(() => {
+      pressTimer = null;
+      pressEl = null;
+      el.classList.remove("holding");
+      suppressClick = true;
+      suppressContextMenu = true;
+      toggleFlag(game, Number(el.dataset.r), Number(el.dataset.c));
+      render();
+    }, LONG_PRESS_MS);
+  }
+
+  function onPressEnd() {
+    if (pressTimer !== null) {
+      clearTimeout(pressTimer);
+      pressTimer = null;
+    }
+    if (pressEl) {
+      pressEl.classList.remove("holding");
+      pressEl = null;
+    }
+  }
+
   restartBtn.addEventListener("click", () => {
     game = createGame(ROWS, COLS, MINE_COUNT);
+    resetTimer();
     buildBoard();
     render();
   });
 
   buildBoard();
+  showBest();
   render();
 }
 

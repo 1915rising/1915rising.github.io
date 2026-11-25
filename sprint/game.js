@@ -53,9 +53,26 @@ const pressed = new Set();
 
 const JUMP_KEYS = ["Space", "ArrowUp", "KeyW"];
 const DUCK_KEYS = ["ArrowDown", "KeyS"];
+const RESTART_KEYS = ["KeyR", "Enter"];
+const PAUSE_KEYS = ["KeyP", "Escape"];
 
 function onKeyDown(e) {
-  if (JUMP_KEYS.includes(e.code) || DUCK_KEYS.includes(e.code)) {
+  // Pause toggle (only mid-run). Swallow the inputs held at the moment
+  // of toggling so nothing jumps/ducks on pause or resume.
+  if (PAUSE_KEYS.includes(e.code)) {
+    if (phase === "running" && !e.repeat) {
+      e.preventDefault();
+      paused = !paused;
+      held.clear();
+      pressed.clear();
+    }
+    return;
+  }
+  if (
+    JUMP_KEYS.includes(e.code) ||
+    DUCK_KEYS.includes(e.code) ||
+    RESTART_KEYS.includes(e.code)
+  ) {
     e.preventDefault();
   }
   if (!e.repeat) pressed.add(e.code);
@@ -80,15 +97,94 @@ window.addEventListener("keydown", onKeyDown);
 window.addEventListener("keyup", onKeyUp);
 canvas.addEventListener("mousedown", onPointerDown);
 window.addEventListener("mouseup", onPointerUp);
-canvas.addEventListener("touchstart", onPointerDown, { passive: false });
-window.addEventListener("touchend", onPointerUp);
+canvas.addEventListener("touchstart", onTouchStart, { passive: false });
+canvas.addEventListener("touchmove", onTouchMove, { passive: false });
+canvas.addEventListener("touchend", onTouchEnd, { passive: false });
+canvas.addEventListener("touchcancel", onTouchCancel, { passive: false });
+
+/* Touch controls: tap = jump (a touch is also a press-and-hold, so
+   holding gives a higher jump, same as Space), swipe up = jump,
+   swipe down = duck. A swipe is a start-to-end (or mid-touch) vertical
+   delta past SWIPE_MIN_PX; anything smaller counts as a tap. */
+const SWIPE_MIN_PX = 24;
+let touchStartX = null;
+let touchStartY = null;
+let touchSwiped = false;      // this touch already became a swipe-duck
+let touchDuckUntil = 0;       // timestamp a swipe-down duck pulse ends
+
+function onTouchStart(e) {
+  e.preventDefault();
+  const t = e.changedTouches[0];
+  if (!t) return;
+  touchStartX = t.clientX;
+  touchStartY = t.clientY;
+  touchSwiped = false;
+  // Immediate press: tap = jump, and holding keeps the jump held.
+  pressed.add("Space");
+  held.add("Space");
+}
+
+function onTouchMove(e) {
+  e.preventDefault();
+  if (touchStartY === null || touchSwiped) return;
+  const t = e.changedTouches[0];
+  if (!t) return;
+  const dy = t.clientY - touchStartY;
+  if (dy >= SWIPE_MIN_PX) {
+    // Swipe down: trade the jump press for a duck held while touching.
+    touchSwiped = true;
+    pressed.delete("Space");
+    held.delete("Space");
+    pressed.add("ArrowDown");
+    held.add("ArrowDown");
+  }
+  // Swipe up needs nothing extra: the touch press already jumped,
+  // and keeping the finger down keeps the jump held.
+}
+
+function onTouchEnd(e) {
+  e.preventDefault();
+  const t = e.changedTouches[0];
+  if (t && touchStartY !== null && !touchSwiped) {
+    const dy = t.clientY - touchStartY;
+    const dx = t.clientX - touchStartX;
+    if (dy >= SWIPE_MIN_PX) {
+      // Fast flick down that ended before a touchmove fired: duck
+      // briefly so the runner still ducks / fast-falls.
+      touchDuckUntil = performance.now() + 300;
+    }
+    // dy <= -SWIPE_MIN_PX is a swipe up, and a tap is a small delta:
+    // both are jumps, already triggered by the touchstart press.
+    void dx;
+  }
+  held.delete("Space");
+  held.delete("ArrowDown");
+  touchStartX = null;
+  touchStartY = null;
+  touchSwiped = false;
+}
+
+function onTouchCancel(e) {
+  e.preventDefault();
+  held.delete("Space");
+  held.delete("ArrowDown");
+  touchStartX = null;
+  touchStartY = null;
+  touchSwiped = false;
+}
 
 function jumpHeld() {
   return JUMP_KEYS.some((k) => held.has(k));
 }
 
 function duckHeld() {
-  return DUCK_KEYS.some((k) => held.has(k));
+  return (
+    DUCK_KEYS.some((k) => held.has(k)) || performance.now() < touchDuckUntil
+  );
+}
+
+function restartPressed() {
+  return RESTART_KEYS.some((k) => pressed.has(k));
 }
 
 function jumpPressed() {
@@ -183,9 +279,13 @@ function spawnObstacle(speed) {
    --------------------------------------------------------------------- */
 
 let phase = "ready";
+let paused = false;
 let speed = START_SPEED;
 let distancePx = 0;
 let bestMeters = loadBest();
+let lastMilestone = 0;        // highest 500 m milestone already celebrated
+let milestoneText = "";
+let milestoneTimer = 0;       // seconds left on the milestone popup
 
 function loadBest() {
   try {
@@ -213,6 +313,11 @@ function startRun() {
   speed = START_SPEED;
   distancePx = 0;
   spawnTimer = 0.9;
+  paused = false;
+  lastMilestone = 0;
+  milestoneText = "";
+  milestoneTimer = 0;
+  touchDuckUntil = 0;
   phase = "running";
 }
 
@@ -230,8 +335,15 @@ function endRun() {
    --------------------------------------------------------------------- */
 
 function update(dt) {
+  // Paused: runner, obstacles, speed and distance all freeze, and any
+  // jump/duck pressed meanwhile is discarded rather than buffered.
+  if (paused) {
+    pressed.clear();
+    return;
+  }
+
   if (phase === "ready" || phase === "over") {
-    if (jumpPressed()) startRun();
+    if (jumpPressed() || restartPressed()) startRun();
     pressed.clear();
     return;
   }
@@ -239,6 +351,15 @@ function update(dt) {
   // --- world speed & distance ---
   speed = Math.min(MAX_SPEED, speed + SPEED_RAMP * dt);
   distancePx += speed * dt;
+
+  // --- distance milestones (popup juice) ---
+  const milestone = Math.floor(scoreMeters() / 500) * 500;
+  if (milestone > 0 && milestone > lastMilestone) {
+    lastMilestone = milestone;
+    milestoneText = milestone + "m!";
+    milestoneTimer = 1.2;
+  }
+  if (milestoneTimer > 0) milestoneTimer -= dt;
 
   // --- runner vertical motion ---
   const ducking = duckHeld();
@@ -432,13 +553,25 @@ function render() {
   drawObstacles();
   drawRunner();
   drawHud();
+  if (milestoneTimer > 0 && phase === "running" && !paused) {
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, milestoneTimer);
+    ctx.fillStyle = "#ffd54f";
+    ctx.font = "bold 36px 'Segoe UI', system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(milestoneText, VIEW_W / 2, 92);
+    ctx.restore();
+    ctx.textAlign = "left";
+  }
   if (phase === "ready") {
     drawCenterMessage("SPRINT", "Press Space or click to start running");
   } else if (phase === "over") {
     drawCenterMessage(
       "WRECKED — " + scoreMeters() + " m",
-      "Press Space or click to run again"
+      "Press Space, R, or Enter to run again"
     );
+  } else if (paused) {
+    drawCenterMessage("Paused", "Press P or Esc to resume");
   }
 }
 

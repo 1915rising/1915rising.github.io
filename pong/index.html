@@ -52,7 +52,14 @@
     max-width: 100%;
     height: auto;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+    touch-action: none;
   }
+  .tally {
+    color: #9fa8c9;
+    font-size: 0.92rem;
+    min-height: 1.2em;
+  }
+  .tally:empty { display: none; }
   .controls-bar {
     display: flex;
     flex-wrap: wrap;
@@ -100,11 +107,15 @@
       <button id="btn-restart" type="button">Restart</button>
     </div>
 
+    <p class="tally" id="wins-tally"></p>
+
     <p class="help">
       <strong>Left paddle:</strong> W / S &nbsp;·&nbsp;
       <strong>Right paddle:</strong> &uarr; / &darr; (two-player mode) &nbsp;·&nbsp;
       <strong>1</strong> vs Computer &nbsp;·&nbsp; <strong>2</strong> Two Players &nbsp;·&nbsp;
-      <strong>R</strong> Restart
+      <strong>R</strong> Restart &nbsp;·&nbsp; <strong>P</strong> / <strong>Esc</strong> Pause<br>
+      <strong>Touch:</strong> drag on the court to move your paddle
+      (two-player mode: left half = left paddle, right half = right paddle)
     </p>
   </div>
 

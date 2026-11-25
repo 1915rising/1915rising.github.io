@@ -79,6 +79,32 @@ window.addEventListener('keyup', (event) => {
   keysDown.delete(event.key);
 });
 
+/* Touch controls: dragging horizontally moves the ship to the touch x;
+ * firing is automatic while a touch is held down. */
+let touchActive = false;
+let touchX = null;
+
+function handleTouch(event) {
+  event.preventDefault(); // avoid scrolling while playing
+  const touch = event.changedTouches[0];
+  if (!touch) return;
+  const rect = canvas.getBoundingClientRect();
+  touchX = (touch.clientX - rect.left) * (WIDTH / rect.width);
+  touchActive = true;
+}
+
+canvas.addEventListener('touchstart', handleTouch, { passive: false });
+canvas.addEventListener('touchmove', handleTouch, { passive: false });
+canvas.addEventListener('touchend', (event) => {
+  event.preventDefault();
+  touchActive = false;
+  touchX = null;
+}, { passive: false });
+canvas.addEventListener('touchcancel', () => {
+  touchActive = false;
+  touchX = null;
+});
+
 function isDown(...keys) {
   return keys.some((key) => keysDown.has(key));
 }
@@ -101,6 +127,7 @@ function createPlayer() {
     radius: PLAYER_RADIUS,
     fireTimer: 0,
     invulnerableTimer: 0, // brief grace period after losing a life
+    hitFlashTimer: 0, // brief red flash when damage is taken
   };
 }
 
@@ -167,6 +194,32 @@ function createStarfield(count) {
  * Pausing is tracked separately so it can freeze any phase.
  * ------------------------------------------------------------------------ */
 
+/* Persistent best score (localStorage). */
+const BEST_SCORE_KEY = 'arcade-starfall-best';
+let bestScore = 0;
+try {
+  bestScore = parseInt(localStorage.getItem(BEST_SCORE_KEY), 10) || 0;
+} catch (err) {
+  bestScore = 0;
+}
+const bestScoreEl = document.getElementById('best-score');
+
+function renderBestScore() {
+  if (bestScoreEl) bestScoreEl.textContent = String(bestScore);
+}
+
+function updateBestScore() {
+  if (state.score > bestScore) {
+    bestScore = state.score;
+    try {
+      localStorage.setItem(BEST_SCORE_KEY, String(bestScore));
+    } catch (err) {
+      // Storage unavailable (e.g. private mode); best still shows this session.
+    }
+  }
+  renderBestScore();
+}
+
 const state = {
   phase: 'wavebreak',
   paused: false,
@@ -180,8 +233,11 @@ const state = {
   bullets: [],
   enemies: [],
   particles: [],
+  popups: [],
   stars: createStarfield(90),
 };
+
+renderBestScore();
 
 function startWave(waveNumber) {
   state.wave = waveNumber;
@@ -197,6 +253,7 @@ function resetGame() {
   state.bullets = [];
   state.enemies = [];
   state.particles = [];
+  state.popups = [];
   state.player = createPlayer();
   state.phase = 'wavebreak';
   state.waveTimer = 0.8;
@@ -204,6 +261,7 @@ function resetGame() {
 }
 
 function loseLife() {
+  state.player.hitFlashTimer = 0.3;
   state.lives -= 1;
   state.particles.push(
     ...createParticles(state.player.x, state.player.y, 26, COLORS.particle),
@@ -228,13 +286,17 @@ function updatePlayer(dt) {
   if (isDown('ArrowRight', 'd', 'D')) {
     player.x += PLAYER_SPEED * dt;
   }
+  if (touchActive && touchX !== null) {
+    player.x = touchX;
+  }
   // Keep the ship fully on screen.
   player.x = Math.max(player.radius, Math.min(WIDTH - player.radius, player.x));
 
   player.fireTimer -= dt;
   player.invulnerableTimer = Math.max(0, player.invulnerableTimer - dt);
+  player.hitFlashTimer = Math.max(0, player.hitFlashTimer - dt);
 
-  if (isDown(' ') && player.fireTimer <= 0) {
+  if ((isDown(' ') || touchActive) && player.fireTimer <= 0) {
     state.bullets.push(createBullet(player.x, player.y - player.radius - 4));
     player.fireTimer = FIRE_COOLDOWN;
   }
@@ -295,7 +357,12 @@ function updateCollisions() {
       if (circlesOverlap(bullet, enemy)) {
         bullet.alive = false;
         enemy.alive = false;
-        state.score += ENEMY_BASE_SCORE + state.wave * 10;
+        const points = ENEMY_BASE_SCORE + state.wave * 10;
+        state.score += points;
+        updateBestScore();
+        state.popups.push({
+          x: enemy.x, y: enemy.y, text: `+${points}`, life: 0.8, maxLife: 0.8,
+        });
         state.particles.push(
           ...createParticles(enemy.x, enemy.y, 14, COLORS.particle),
         );
@@ -303,6 +370,14 @@ function updateCollisions() {
       }
     }
   }
+}
+
+function updatePopups(dt) {
+  for (const popup of state.popups) {
+    popup.y -= 42 * dt;
+    popup.life -= dt;
+  }
+  state.popups = state.popups.filter((p) => p.life > 0);
 }
 
 function updateParticles(dt) {
@@ -341,13 +416,14 @@ function update(dt, elapsed) {
 
   if (state.phase === 'gameover') {
     updateParticles(dt);
+    updatePopups(dt);
     if (wasPressed('Enter', 'r', 'R')) {
       resetGame();
     }
     return;
   }
 
-  if (wasPressed('p', 'P')) {
+  if (wasPressed('p', 'P', 'Escape')) {
     state.paused = !state.paused;
   }
   if (state.paused) return;
@@ -355,6 +431,7 @@ function update(dt, elapsed) {
   if (state.phase === 'wavebreak') {
     state.waveTimer -= dt;
     updateParticles(dt);
+    updatePopups(dt);
     if (state.waveTimer <= 0) {
       startWave(state.wave + 1);
     }
@@ -368,6 +445,7 @@ function update(dt, elapsed) {
   updateEnemies(dt, elapsed);
   updateCollisions();
   updateParticles(dt);
+  updatePopups(dt);
   pruneEntities();
 
   // Wave cleared: everything spawned and destroyed (or slipped past).
@@ -425,6 +503,27 @@ function drawPlayer() {
   ctx.beginPath();
   ctx.arc(x, y - 4, 3.5, 0, Math.PI * 2);
   ctx.fill();
+
+  // Brief hit flash when damage is taken.
+  if (state.player.hitFlashTimer > 0) {
+    ctx.globalAlpha = Math.min(0.65, state.player.hitFlashTimer * 2.2);
+    ctx.fillStyle = '#ff5252';
+    ctx.beginPath();
+    ctx.arc(x, y, 20, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+}
+
+function drawPopups() {
+  ctx.textAlign = 'center';
+  ctx.font = '700 14px system-ui, sans-serif';
+  for (const popup of state.popups) {
+    ctx.globalAlpha = Math.max(0, popup.life / popup.maxLife);
+    ctx.fillStyle = COLORS.shipAccent;
+    ctx.fillText(popup.text, popup.x, popup.y);
+  }
+  ctx.globalAlpha = 1;
 }
 
 function drawBullets() {
@@ -477,6 +576,13 @@ function drawHud() {
   ctx.textAlign = 'left';
   ctx.fillText(`Score  ${state.score}`, 14, 26);
 
+  ctx.fillStyle = COLORS.dimText;
+  ctx.font = '600 13px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(`Best  ${bestScore}`, 14, 46);
+  ctx.fillStyle = COLORS.text;
+  ctx.font = '600 16px system-ui, sans-serif';
+
   ctx.textAlign = 'center';
   ctx.fillText(`Wave ${Math.max(1, state.wave)}`, WIDTH / 2, 26);
 
@@ -511,6 +617,7 @@ function draw() {
   drawBullets();
   drawEnemies();
   drawParticles();
+  drawPopups();
   if (state.phase !== 'gameover') {
     drawPlayer();
   }
@@ -537,6 +644,7 @@ function draw() {
       [
         ['Game Over', '700 40px system-ui, sans-serif', COLORS.text],
         [`Final score  ${state.score}`, '600 18px system-ui, sans-serif', COLORS.dimText],
+        [`Best  ${bestScore}`, '600 18px system-ui, sans-serif', COLORS.dimText],
         [`Reached wave ${state.wave}`, '600 18px system-ui, sans-serif', COLORS.dimText],
         ['Press Enter to play again', '600 16px system-ui, sans-serif', COLORS.text],
       ],

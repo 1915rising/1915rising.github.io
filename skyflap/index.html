@@ -35,7 +35,8 @@
     font-size: 1.05rem;
     margin: 8px 2px 10px;
   }
-  .hud b { color: #ffd54f; }
+  .hud b { color: #ffd54f; display: inline-block; transition: transform 0.12s ease; }
+  .hud b.pop { transform: scale(1.35); }
   canvas {
     display: block;
     width: 100%;
@@ -43,7 +44,7 @@
     background: #0b0e1a;
     border: 1px solid #262e52;
     border-radius: 10px;
-    touch-action: manipulation;
+    touch-action: none;
   }
   .help {
     text-align: center;
@@ -63,7 +64,7 @@
       <span>Best: <b id="best">0</b></span>
     </div>
     <canvas id="game" width="420" height="640"></canvas>
-    <p class="help">Click, tap, or press <b>Space</b> to flap. Thread the gates — each one you clear is +1. Don't clip a gate, the ground, or the ceiling.</p>
+    <p class="help">Click, tap, or press <b>Space</b> to flap. Thread the gates — each one you clear is +1, and gates speed up slightly every 5 cleared. Don't clip a gate, the ground, or the ceiling.<br>Press <b>P</b> or <b>Esc</b> to pause / resume. Press <b>R</b> to restart.</p>
   </div>
   <script src="game.js"></script>
 </body>

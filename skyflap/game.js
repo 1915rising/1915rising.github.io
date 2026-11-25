@@ -25,9 +25,20 @@
   var MAX_FALL = 800;     // terminal fall speed, px/s
 
   var GATE_W = 72;        // gate pillar width
-  var GATE_GAP = 154;     // vertical opening between the pillars
-  var GATE_SPEED = 172;   // leftward scroll speed, px/s
+  var GATE_GAP = 154;     // vertical opening between the pillars (starting size)
+  var GATE_SPEED = 172;   // leftward scroll speed, px/s (starting speed)
   var GATE_EVERY = 1.45;  // seconds between new gates
+  // Difficulty ramp: every 5 gates cleared, gates scroll a little faster
+  // and the gap shrinks a little, both capped at fair limits.
+  var GATE_SPEED_MAX = 260; // px/s cap
+  var GATE_GAP_MIN = 110;   // px floor — always comfortably wider than the bird
+  var RAMP_EVERY = 5;       // gates per ramp step
+  var RAMP_SPEED = 10;      // px/s added per step
+  var RAMP_GAP = 6;         // px removed from the gap per step
+
+  function rampSteps() { return Math.floor(S.score / RAMP_EVERY); }
+  function gateSpeed() { return Math.min(GATE_SPEED + rampSteps() * RAMP_SPEED, GATE_SPEED_MAX); }
+  function gateGap() { return Math.max(GATE_GAP - rampSteps() * RAMP_GAP, GATE_GAP_MIN); }
 
   var BEST_KEY = "skyflap-best";
 
@@ -52,6 +63,7 @@
     spawnIn: 0,           // seconds until the next gate spawns
     score: 0,
     best: loadBest(),
+    paused: false,        // only meaningful while mode === "playing"
     overAt: -1            // S.time when the run ended (restart lockout)
   };
 
@@ -62,6 +74,15 @@
     } catch (e) {
       return 0; // storage unavailable (private mode, file://, ...)
     }
+  }
+
+  // Tiny juice: pop the HUD score readout when a gate is cleared.
+  function popScore() {
+    if (!scoreEl || !scoreEl.classList) return;
+    scoreEl.classList.remove("pop");
+    void scoreEl.offsetWidth; // restart the CSS transition
+    scoreEl.classList.add("pop");
+    window.setTimeout(function () { scoreEl.classList.remove("pop"); }, 140);
   }
 
   function saveBest() {
@@ -82,10 +103,25 @@
     S.gates = [];
     S.spawnIn = 0.6;      // first gate arrives quickly
     S.score = 0;
+    S.paused = false;
     S.overAt = -1;
   }
 
+  function togglePause() {
+    // Pausing is only possible mid-run: never on the game-over screen
+    // (and there's nothing to freeze on the ready screen).
+    if (S.mode !== "playing") return;
+    S.paused = !S.paused;
+  }
+
+  function restartRun() {
+    reset();
+    S.mode = "playing";
+    S.birdVy = FLAP_VY;
+  }
+
   function flap() {
+    if (S.paused) return; // flap inputs must not flap or restart while paused
     if (S.mode === "ready") {
       S.mode = "playing";
       S.birdVy = FLAP_VY;
@@ -115,12 +151,14 @@
   // ------------------------------------------------------------------
   function spawnGate() {
     var margin = 70;
-    var half = GATE_GAP / 2;
-    var center = margin + half + Math.random() * (SKY_H - 2 * margin - GATE_GAP);
-    S.gates.push({ x: W + 10, gapCenter: center, scored: false });
+    var gap = gateGap(); // this gate keeps the gap it was spawned with
+    var half = gap / 2;
+    var center = margin + half + Math.random() * (SKY_H - 2 * margin - gap);
+    S.gates.push({ x: W + 10, gapCenter: center, gap: gap, scored: false });
   }
 
   function update(dt) {
+    if (S.paused) return; // bird, gates, score, and clock all freeze
     S.time += dt;
     if (S.mode !== "playing") return;
 
@@ -137,10 +175,11 @@
     }
     for (var i = S.gates.length - 1; i >= 0; i--) {
       var g = S.gates[i];
-      g.x -= GATE_SPEED * dt;
+      g.x -= gateSpeed() * dt;
       if (!g.scored && g.x + GATE_W < BIRD_X - BIRD_R) {
         g.scored = true;
         S.score += 1;
+        popScore();
       }
       if (g.x + GATE_W < 0) S.gates.splice(i, 1);
     }
@@ -156,8 +195,8 @@
     for (var i = 0; i < S.gates.length; i++) {
       var g = S.gates[i];
       if (BIRD_X + BIRD_R < g.x || BIRD_X - BIRD_R > g.x + GATE_W) continue;
-      var gapTop = g.gapCenter - GATE_GAP / 2;
-      var gapBottom = g.gapCenter + GATE_GAP / 2;
+      var gapTop = g.gapCenter - g.gap / 2;
+      var gapBottom = g.gapCenter + g.gap / 2;
       if (S.birdY - BIRD_R < gapTop || S.birdY + BIRD_R > gapBottom) return true;
     }
     return false;
@@ -194,6 +233,16 @@
       ctx.font = "400 16px 'Segoe UI', system-ui, sans-serif";
       ctx.fillText("Flap to fly again", W / 2, SKY_H / 2 + 30);
     }
+    if (S.paused) {
+      ctx.fillStyle = "rgba(11, 14, 26, 0.6)";
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = "#ffd54f";
+      ctx.font = "700 36px 'Segoe UI', system-ui, sans-serif";
+      ctx.fillText("Paused", W / 2, SKY_H / 2 - 10);
+      ctx.fillStyle = "#e8eaf6";
+      ctx.font = "400 16px 'Segoe UI', system-ui, sans-serif";
+      ctx.fillText("Press P or Esc to resume", W / 2, SKY_H / 2 + 24);
+    }
 
     // Keep the HTML score readout in sync.
     scoreEl.textContent = String(S.score);
@@ -203,8 +252,8 @@
   function drawGates() {
     for (var i = 0; i < S.gates.length; i++) {
       var g = S.gates[i];
-      var gapTop = g.gapCenter - GATE_GAP / 2;
-      var gapBottom = g.gapCenter + GATE_GAP / 2;
+      var gapTop = g.gapCenter - g.gap / 2;
+      var gapBottom = g.gapCenter + g.gap / 2;
       pillar(g.x, 0, gapTop);
       pillar(g.x, gapBottom, SKY_H - gapBottom);
     }
@@ -285,7 +334,13 @@
   }
 
   document.addEventListener("keydown", function (e) {
-    if (e.code === "Space" || e.code === "ArrowUp" || e.code === "KeyW") {
+    if (e.code === "KeyP" || e.code === "Escape") {
+      if (e && e.preventDefault) e.preventDefault();
+      togglePause();
+    } else if (e.code === "KeyR") {
+      if (e && e.preventDefault) e.preventDefault();
+      restartRun();
+    } else if (e.code === "Space" || e.code === "ArrowUp" || e.code === "KeyW") {
       onFlapInput(e);
     }
   });
@@ -300,5 +355,5 @@
   window.requestAnimationFrame(loop);
 
   // Small handle for automated smoke tests (and curious consoles).
-  window.Skyflap = { state: S, flap: flap, reset: reset };
+  window.Skyflap = { state: S, flap: flap, reset: reset, togglePause: togglePause, restart: restartRun };
 })();

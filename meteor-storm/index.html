@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meteor Storm — 1915 Arcade</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: #0b0e1a;
+    color: #e8eaf6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 16px 40px;
+  }
+  .topbar {
+    width: 100%;
+    max-width: 720px;
+    margin-bottom: 10px;
+  }
+  .topbar a {
+    color: #9fc3ff;
+    text-decoration: none;
+    font-size: 0.95rem;
+  }
+  .topbar a:hover { text-decoration: underline; }
+  h1 {
+    font-size: 2.2rem;
+    letter-spacing: 2px;
+    color: #ffd54f;
+    text-shadow: 0 0 16px rgba(255, 213, 79, 0.35);
+    margin-bottom: 4px;
+  }
+  .tagline { color: #9fa8c9; margin-bottom: 16px; }
+  .hud {
+    display: flex;
+    gap: 28px;
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+  }
+  .hud .label { color: #9fa8c9; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; display: block; text-align: center; }
+  .hud .value { color: #fff; font-weight: 700; font-size: 1.35rem; text-align: center; }
+  .stage {
+    position: relative;
+    width: 720px;
+    height: 480px;
+    max-width: 92vw;
+  }
+  canvas {
+    background: #10142a;
+    border: 1px solid #262e52;
+    border-radius: 10px;
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: rgba(8, 10, 22, 0.82);
+    border-radius: 10px;
+    text-align: center;
+    padding: 20px;
+  }
+  .overlay.show { display: flex; }
+  .overlay h2 { font-size: 1.8rem; color: #ffd54f; }
+  .overlay p { color: #b8bedd; }
+  .overlay button {
+    background: #ffd54f;
+    color: #141414;
+    border: none;
+    font-weight: 700;
+    font-size: 1rem;
+    padding: 10px 26px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .overlay button:hover { background: #ffca28; }
+  .controls {
+    margin-top: 16px;
+    color: #9fa8c9;
+    font-size: 0.92rem;
+    text-align: center;
+    line-height: 1.6;
+  }
+  .controls b { color: #e8eaf6; }
+</style>
+</head>
+<body>
+  <div class="topbar"><a href="../">← Back to 1915 Arcade</a></div>
+
+  <h1>METEOR STORM</h1>
+  <p class="tagline">Blast the meteors, split the big ones, survive the storm.</p>
+
+  <div class="hud">
+    <div><span class="label">Score</span><span class="value" id="score">0</span></div>
+    <div><span class="label">Best</span><span class="value" id="best">0</span></div>
+    <div><span class="label">Wave</span><span class="value" id="wave">1</span></div>
+    <div><span class="label">Lives</span><span class="value" id="lives">3</span></div>
+  </div>
+
+  <div class="stage">
+    <canvas id="game" width="720" height="480"></canvas>
+    <div class="overlay" id="overlay">
+      <h2 id="overlay-title">Game Over</h2>
+      <p id="overlay-text">Score: 0</p>
+      <button id="restart-btn" type="button">Play Again</button>
+    </div>
+  </div>
+
+  <p class="controls">
+    <b>Rotate:</b> Left/Right arrows or A/D &nbsp;·&nbsp; <b>Thrust:</b> Up arrow or W &nbsp;·&nbsp; <b>Fire:</b> Space<br>
+    <b>Pause:</b> P or Esc &nbsp;·&nbsp; <b>Restart:</b> R or Enter (when game over)
+  </p>
+
+  <script src="game.js"></script>
+</body>
+</html>

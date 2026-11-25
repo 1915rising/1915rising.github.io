@@ -67,12 +67,53 @@ const ball = { x: WIDTH / 2, y: HEIGHT / 2, vx: 0, vy: 0, speed: BALL_START_SPEE
 const state = {
   phase: 'menu',        // 'menu' | 'serve' | 'play' | 'over'
   mode: 'ai',           // 'ai' | '2p'
+  paused: false,        // true freezes a live match (serve timer included)
   leftScore: 0,
   rightScore: 0,
   winner: null,         // 'left' | 'right' once phase === 'over'
   serveTimer: 0,
   serveDirection: 1,    // 1 = serve toward the right, -1 = toward the left
 };
+
+// ---------------------------------------------------------------------------
+// Persistence — running tally of match wins against the computer, kept in
+// localStorage so it survives page reloads. Two-player matches never count.
+// ---------------------------------------------------------------------------
+
+const WINS_KEY = 'arcade-pong-wins';
+
+function loadAiWins() {
+  const empty = { player: 0, ai: 0 };
+  try {
+    if (typeof localStorage === 'undefined') return empty;
+    const parsed = JSON.parse(localStorage.getItem(WINS_KEY) || 'null');
+    if (!parsed) return empty;
+    return {
+      player: Math.max(0, parseInt(parsed.player, 10) || 0),
+      ai: Math.max(0, parseInt(parsed.ai, 10) || 0),
+    };
+  } catch (err) {
+    return empty; // storage blocked or corrupt — play on without a tally
+  }
+}
+
+const aiWins = loadAiWins();
+
+function saveAiWins() {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(WINS_KEY, JSON.stringify(aiWins));
+    }
+  } catch (err) { /* storage unavailable; the tally just won't persist */ }
+}
+
+function updateWinsDisplay() {
+  const el = document.getElementById('wins-tally');
+  if (el) {
+    el.textContent = 'Wins vs Computer — You: ' + aiWins.player +
+                     ' · Computer: ' + aiWins.ai;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Input — a Set of currently held keys, matched case-insensitively
@@ -87,9 +128,18 @@ function onKeyDown(event) {
   }
   heldKeys.add(key);
 
+  if (key === 'p' || key === 'Escape') togglePause();
   if (key === '1') startMatch('ai');
   if (key === '2') startMatch('2p');
   if (key === 'r' || key === 'R') restart();
+}
+
+function togglePause() {
+  // Only a live match can pause; the menu and game-over screens are static.
+  // Pausing mid-serve is safe: update() stops, so the serve timer, ball and
+  // paddles all hold exactly where they were until play resumes.
+  if (state.phase !== 'serve' && state.phase !== 'play') return;
+  state.paused = !state.paused;
 }
 
 function onKeyUp(event) {
@@ -109,11 +159,49 @@ bindButton('btn-2p', function () { startMatch('2p'); });
 bindButton('btn-restart', function () { restart(); });
 
 // ---------------------------------------------------------------------------
+// Touch input — dragging on the court moves a paddle to the finger's height.
+// In 1P mode every touch drives the left (player) paddle; in 2P mode touches
+// on the left half drive the left paddle and touches on the right half drive
+// the right one, so two fingers can play at once.
+// ---------------------------------------------------------------------------
+
+function touchToCanvas(touch) {
+  // The canvas is CSS-scaled to fit the page, so map client coordinates
+  // back into court coordinates.
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (touch.clientX - rect.left) * (WIDTH / rect.width),
+    y: (touch.clientY - rect.top) * (HEIGHT / rect.height),
+  };
+}
+
+function onTouch(event) {
+  event.preventDefault(); // keep the page from scrolling while playing
+  for (let i = 0; i < event.touches.length; i++) {
+    const pos = touchToCanvas(event.touches[i]);
+    if (state.mode === '2p' && pos.x >= WIDTH / 2) {
+      rightPaddle.y = pos.y;
+      clampPaddle(rightPaddle);
+    } else {
+      leftPaddle.y = pos.y;
+      clampPaddle(leftPaddle);
+    }
+  }
+}
+
+canvas.addEventListener('touchstart', onTouch, { passive: false });
+canvas.addEventListener('touchmove', onTouch, { passive: false });
+canvas.addEventListener('touchend', function (event) {
+  event.preventDefault();
+}, { passive: false });
+
+// ---------------------------------------------------------------------------
 // Match flow
 // ---------------------------------------------------------------------------
 
 function startMatch(mode) {
   state.mode = mode;
+  state.paused = false;
   state.leftScore = 0;
   state.rightScore = 0;
   state.winner = null;
@@ -157,6 +245,13 @@ function awardPoint(side) {
     state.phase = 'over';
     ball.vx = 0;
     ball.vy = 0;
+    // Only matches against the computer feed the persistent win tally.
+    if (state.mode === 'ai') {
+      if (state.winner === 'left') aiWins.player += 1;
+      else aiWins.ai += 1;
+      saveAiWins();
+      updateWinsDisplay();
+    }
     return;
   }
 
@@ -250,6 +345,7 @@ function updateBall(dt) {
 }
 
 function update(dt) {
+  if (state.paused) return; // frozen: ball, paddles and serve timer all hold
   if (state.phase === 'menu' || state.phase === 'over') return;
   updatePaddles(dt);
   if (state.phase === 'serve') {
@@ -324,6 +420,14 @@ function render() {
     drawText('Press R or Restart to play again',
              WIDTH / 2, HEIGHT / 2 + 30, 18, COLOR_TEXT);
   }
+
+  // Paused overlay — drawn last so it sits over the frozen court.
+  if (state.paused) {
+    ctx.fillStyle = 'rgba(11, 14, 26, 0.55)';
+    ctx.fillRect(0, 0, WIDTH, HEIGHT);
+    drawText('PAUSED', WIDTH / 2, HEIGHT / 2 - 14, 44, COLOR_GOLD);
+    drawText('Press P or Esc to resume', WIDTH / 2, HEIGHT / 2 + 30, 18, COLOR_TEXT);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -343,6 +447,7 @@ function frame(timestamp) {
   requestAnimationFrame(frame);
 }
 
+updateWinsDisplay(); // show the saved win tally as soon as the page loads
 requestAnimationFrame(frame);
 
 // ---------------------------------------------------------------------------

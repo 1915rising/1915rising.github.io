@@ -175,8 +175,10 @@ if (typeof document !== 'undefined') {
     var overlayTitle = document.getElementById('overlay-title');
     var overlayText = document.getElementById('overlay-text');
     var overlayButton = document.getElementById('overlay-button');
+    var undoEl = document.getElementById('undo');
 
     var board, score, best, won, over, keepPlaying;
+    var undoSnapshot = null; // { board, score, won, keepPlaying } from before the last move
 
     /* Build the 16 cell elements once; render() just updates them. */
     var cellEls = [];
@@ -193,8 +195,54 @@ if (typeof document !== 'undefined') {
       won = false;
       over = false;
       keepPlaying = false;
+      undoSnapshot = null;
       overlayEl.className = '';
       render();
+    }
+
+    /*
+     * Persist the in-progress game (board + score + win state) so a page
+     * reload resumes where the player left off. A finished game is not
+     * saved — its slot is cleared so the next visit starts fresh.
+     */
+    function saveGame() {
+      try {
+        if (over) { localStorage.removeItem('numberMergeSave'); return; }
+        localStorage.setItem('numberMergeSave', JSON.stringify({
+          board: board, score: score, won: won, keepPlaying: keepPlaying
+        }));
+      } catch (e) { /* private mode */ }
+    }
+
+    /* Restore a saved in-progress game. Returns false when there is no
+       usable save, in which case the caller starts a new game. */
+    function loadSavedGame() {
+      var data;
+      try {
+        var raw = localStorage.getItem('numberMergeSave');
+        if (!raw) return false;
+        data = JSON.parse(raw);
+      } catch (e) { return false; }
+      if (!data || !Array.isArray(data.board) || data.board.length !== SIZE * SIZE) return false;
+      for (var i = 0; i < data.board.length; i++) {
+        if (typeof data.board[i] !== 'number') return false;
+      }
+      board = data.board.slice();
+      score = typeof data.score === 'number' ? data.score : 0;
+      won = !!data.won;
+      /* If the save was taken with the win overlay up, treat the win as
+         already acknowledged so play can continue without the overlay. */
+      keepPlaying = !!data.keepPlaying || won;
+      over = false;
+      undoSnapshot = null;
+      if (!canMove(board)) return false; // a finished board is not resumable
+      overlayEl.className = '';
+      render();
+      return true;
+    }
+
+    function updateUndoButton() {
+      if (undoEl) undoEl.disabled = !undoSnapshot || over;
     }
 
     function render() {
@@ -209,6 +257,8 @@ if (typeof document !== 'undefined') {
         try { localStorage.setItem('numberMergeBest', String(best)); } catch (e) { /* private mode */ }
       }
       bestEl.textContent = String(best);
+      saveGame();
+      updateUndoButton();
     }
 
     function showOverlay(title, text, buttonText) {
@@ -223,6 +273,11 @@ if (typeof document !== 'undefined') {
       if (won && !keepPlaying) return; // win overlay is up; wait for the choice
       var result = moveBoard(board, dir);
       if (!result.moved) return;       // invalid move: no spawn, no score
+      /* Snapshot the pre-move state for a one-step undo. moveBoard does
+         not mutate its input, so the old board is still intact here. */
+      undoSnapshot = {
+        board: board.slice(), score: score, won: won, keepPlaying: keepPlaying
+      };
       board = result.board;
       score += result.gained;
       addRandomTile(board);
@@ -241,7 +296,25 @@ if (typeof document !== 'undefined') {
       render();
     }
 
-    /* Keyboard: arrows and WASD slide, R restarts. */
+    /*
+     * Take back the last move, exactly once: the snapshot is consumed, so
+     * undoing again does nothing until another move is made. Not available
+     * after game over. Restoring the snapshot's won/keepPlaying flags and
+     * hiding the overlay clears any win state the undone move triggered.
+     */
+    function doUndo() {
+      if (over) return;
+      if (!undoSnapshot) return;
+      board = undoSnapshot.board.slice();
+      score = undoSnapshot.score;
+      won = undoSnapshot.won;
+      keepPlaying = undoSnapshot.keepPlaying;
+      undoSnapshot = null;
+      overlayEl.className = '';
+      render();
+    }
+
+    /* Keyboard: arrows and WASD slide, R restarts, U undoes. */
     var KEY_DIRS = {
       ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down',
       a: 'left', d: 'right', w: 'up', s: 'down',
@@ -249,6 +322,7 @@ if (typeof document !== 'undefined') {
     };
     document.addEventListener('keydown', function (event) {
       if (event.key === 'r' || event.key === 'R') { startGame(); return; }
+      if (event.key === 'u' || event.key === 'U') { doUndo(); return; }
       var dir = KEY_DIRS[event.key];
       if (dir) {
         event.preventDefault(); // keep the page from scrolling
@@ -275,6 +349,7 @@ if (typeof document !== 'undefined') {
     }, { passive: true });
 
     document.getElementById('restart').addEventListener('click', startGame);
+    if (undoEl) undoEl.addEventListener('click', doUndo);
     overlayButton.addEventListener('click', function () {
       if (won && !over) {
         /* "Keep Playing" after the win: hide the overlay and continue. */
@@ -287,7 +362,7 @@ if (typeof document !== 'undefined') {
 
     best = 0;
     try { best = parseInt(localStorage.getItem('numberMergeBest') || '0', 10) || 0; } catch (e) { /* ignore */ }
-    startGame();
+    if (!loadSavedGame()) startGame();
   })();
 }
 

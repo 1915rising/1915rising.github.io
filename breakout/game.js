@@ -55,6 +55,25 @@ const ROW_STYLES = [
 
 const START_LIVES = 3;
 
+const BEST_KEY = "arcade-breakout-best";
+
+function loadBest() {
+  try {
+    const value = parseInt(localStorage.getItem(BEST_KEY), 10);
+    return Number.isFinite(value) && value > 0 ? value : 0;
+  } catch (err) {
+    return 0; // storage unavailable (e.g. private mode) — play without it
+  }
+}
+
+function saveBest() {
+  try {
+    localStorage.setItem(BEST_KEY, String(game.best));
+  } catch (err) {
+    // Storage unavailable — best simply won't persist.
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /* 2. Input                                                           */
 /* ------------------------------------------------------------------ */
@@ -65,6 +84,14 @@ let mouseX = null; // paddle target from the mouse, in canvas coordinates
 document.addEventListener("keydown", (event) => {
   if (event.key === "ArrowLeft" || event.key === "a") keys.left = true;
   if (event.key === "ArrowRight" || event.key === "d") keys.right = true;
+  if (event.key === "p" || event.key === "P" || event.key === "Escape") {
+    togglePause();
+    return;
+  }
+  if (event.key === "r" || event.key === "R") {
+    if (game.state === "gameover" || game.state === "win") resetGame();
+    return;
+  }
   if (event.key === " ") {
     event.preventDefault();
     onActionButton();
@@ -92,16 +119,37 @@ canvas.addEventListener("touchmove", (event) => {
   mouseX = ((touch.clientX - rect.left) / rect.width) * WIDTH;
 }, { passive: false });
 
-canvas.addEventListener("touchstart", () => onActionButton());
+canvas.addEventListener("touchstart", (event) => {
+  // Move the paddle to the tap, too, so a tap both positions and launches.
+  const rect = canvas.getBoundingClientRect();
+  const touch = event.touches[0];
+  if (touch) {
+    mouseX = ((touch.clientX - rect.left) / rect.width) * WIDTH;
+  }
+  onActionButton();
+});
 
 // Space / click means "launch the ball" while waiting, and "restart"
-// once the game is over.
+// once the game is over. While paused it just resumes, so a stray click
+// to get back in never accidentally launches the ball.
 function onActionButton() {
+  if (game.paused) {
+    game.paused = false;
+    return;
+  }
   if (game.state === "ready") {
     launchBall();
   } else if (game.state === "gameover" || game.state === "win") {
     resetGame();
   }
+}
+
+// Pause only applies to a live game (waiting to launch or in play), so
+// it can never freeze the game-over / win screens. The ball's launch
+// state is untouched: a paused "ready" ball is still waiting on resume.
+function togglePause() {
+  if (game.state !== "playing" && game.state !== "ready") return;
+  game.paused = !game.paused;
 }
 
 /* ------------------------------------------------------------------ */
@@ -111,12 +159,31 @@ function onActionButton() {
 const game = {
   state: "ready", // "ready" | "playing" | "gameover" | "win"
   score: 0,
+  best: loadBest(),
+  paused: false,
   lives: START_LIVES,
   level: 1,
   paddle: { x: WIDTH / 2 - PADDLE_WIDTH / 2 },
   ball: { x: 0, y: 0, vx: 0, vy: 0, speed: BALL_BASE_SPEED },
   bricks: [],
 };
+
+// Brief juice on a brick break: a fading flash where the brick was and
+// a floating "+points" label. Both live for well under a second.
+const brickFlashes = [];
+const floaters = [];
+
+function tickEffects(dt) {
+  for (let i = brickFlashes.length - 1; i >= 0; i--) {
+    brickFlashes[i].life -= dt;
+    if (brickFlashes[i].life <= 0) brickFlashes.splice(i, 1);
+  }
+  for (let i = floaters.length - 1; i >= 0; i--) {
+    floaters[i].life -= dt;
+    floaters[i].y -= 30 * dt;
+    if (floaters[i].life <= 0) floaters.splice(i, 1);
+  }
+}
 
 function buildLevel() {
   game.bricks = [];
@@ -159,6 +226,9 @@ function launchBall() {
 
 function resetGame() {
   game.score = 0;
+  game.paused = false;
+  brickFlashes.length = 0;
+  floaters.length = 0;
   game.lives = START_LIVES;
   game.level = 1;
   game.paddle.x = WIDTH / 2 - PADDLE_WIDTH / 2;
@@ -252,6 +322,14 @@ function collideBricks() {
 
     brick.alive = false;
     game.score += brick.points;
+    brickFlashes.push({
+      x: brick.x, y: brick.y, width: brick.width, height: brick.height,
+      color: brick.color, life: 0.18, max: 0.18,
+    });
+    floaters.push({
+      x: brick.x + brick.width / 2, y: brick.y,
+      text: "+" + brick.points, life: 0.7, max: 0.7,
+    });
     syncHud();
 
     if (Math.abs(dx) > Math.abs(dy)) {
@@ -285,6 +363,8 @@ function loseBallIfOut() {
 /* ------------------------------------------------------------------ */
 
 function update(dt) {
+  if (game.paused) return; // ball, paddle and effects all freeze
+  tickEffects(dt);
   movePaddle(dt);
 
   if (game.state === "ready") {
@@ -318,6 +398,26 @@ function draw() {
     ctx.fillRect(brick.x, brick.y, brick.width, brick.height);
   }
 
+  // Brick-break flashes
+  for (const flash of brickFlashes) {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, flash.life / flash.max);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(flash.x, flash.y, flash.width, flash.height);
+    ctx.restore();
+  }
+
+  // Floating score text
+  ctx.textAlign = "center";
+  for (const floater of floaters) {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, floater.life / floater.max);
+    ctx.fillStyle = "#ffd54f";
+    ctx.font = "bold 14px 'Segoe UI', system-ui, sans-serif";
+    ctx.fillText(floater.text, floater.x, floater.y);
+    ctx.restore();
+  }
+
   // Paddle
   ctx.fillStyle = "#ffd54f";
   ctx.fillRect(game.paddle.x, PADDLE_Y, PADDLE_WIDTH, PADDLE_HEIGHT);
@@ -342,12 +442,28 @@ function draw() {
     ctx.fillStyle = "#e8eaf6";
     ctx.font = "20px 'Segoe UI', system-ui, sans-serif";
     ctx.fillText("Score: " + game.score, WIDTH / 2, HEIGHT / 2 + 28);
-    ctx.fillText("Press Space to play again", WIDTH / 2, HEIGHT / 2 + 60);
+    ctx.fillText("Best: " + game.best, WIDTH / 2, HEIGHT / 2 + 56);
+    ctx.fillText("Press Space or R to play again", WIDTH / 2, HEIGHT / 2 + 88);
+  }
+
+  if (game.paused) {
+    ctx.fillStyle = "#ffd54f";
+    ctx.font = "bold 40px 'Segoe UI', system-ui, sans-serif";
+    ctx.fillText("PAUSED", WIDTH / 2, HEIGHT / 2 - 10);
+    ctx.fillStyle = "#e8eaf6";
+    ctx.font = "20px 'Segoe UI', system-ui, sans-serif";
+    ctx.fillText("Press P or Esc to resume", WIDTH / 2, HEIGHT / 2 + 28);
   }
 }
 
 function syncHud() {
+  // Best updates live the moment it's beaten, and persists immediately.
+  if (game.score > game.best) {
+    game.best = game.score;
+    saveBest();
+  }
   document.getElementById("score").textContent = String(game.score);
+  document.getElementById("best").textContent = String(game.best);
   document.getElementById("level").textContent = String(game.level);
   document.getElementById("lives").textContent = String(game.lives);
 }

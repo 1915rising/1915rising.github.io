@@ -49,6 +49,22 @@
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
   }
 
+  .hud {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #93a4c4;
+    text-align: center;
+  }
+
+  .hud span {
+    color: #ffd75e;
+    font-weight: 700;
+  }
+
+  canvas {
+    touch-action: none;
+  }
+
   .help {
     margin: 0;
     font-size: 0.9rem;
@@ -65,14 +81,17 @@
 <body>
   <h1>Star<span>fall</span></h1>
 
+  <p class="hud">Best&nbsp; <span id="best-score">0</span></p>
+
   <!-- The game renders entirely into this canvas from game.js. -->
   <canvas id="game" width="480" height="640" aria-label="Starfall game canvas"></canvas>
 
   <p class="help">
     <strong>&larr; &rarr;</strong> or <strong>A / D</strong> to move &nbsp;&middot;&nbsp;
     <strong>Space</strong> to shoot &nbsp;&middot;&nbsp;
-    <strong>P</strong> to pause &nbsp;&middot;&nbsp;
-    <strong>Enter</strong> to restart
+    <strong>P</strong> or <strong>Esc</strong> to pause &nbsp;&middot;&nbsp;
+    <strong>Enter</strong> to restart &nbsp;&middot;&nbsp;
+    <strong>Touch:</strong> drag to move, hold to shoot
   </p>
 
   <script src="game.js"></script>

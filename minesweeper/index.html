@@ -35,6 +35,8 @@
     display: flex;
     gap: 24px;
     align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
     margin: 14px 0 16px;
     font-size: 1.05rem;
   }
@@ -86,6 +88,14 @@
   .cell.mine { background: #5c1a1a; }
   .cell.exploded { background: #b71c1c; }
   .cell.flagged { color: #ffd54f; }
+  .cell {
+    touch-action: none;
+    -webkit-touch-callout: none;
+  }
+  .cell.holding {
+    background: #3a467a;
+    border-color: #ffd54f;
+  }
   .n1 { color: #64b5f6; } .n2 { color: #81c784; } .n3 { color: #e57373; }
   .n4 { color: #ba68c8; } .n5 { color: #ffb74d; } .n6 { color: #4db6ac; }
   .n7 { color: #f06292; } .n8 { color: #90a4ae; }
@@ -104,6 +114,8 @@
 
   <div class="hud">
     <span class="counter">Mines left: <span id="counter">10</span></span>
+    <span class="counter">Time: <span id="timer">0:00</span></span>
+    <span class="counter">Best time: <span id="best">—</span></span>
     <span class="status" id="status">Good luck!</span>
     <button id="restart" type="button">Restart</button>
   </div>
@@ -112,7 +124,9 @@
 
   <p class="help">
     Left-click a square to reveal it. Right-click to place or remove a flag.<br>
-    Your first click is always safe. Reveal every safe square to win — don't hit a mine!
+    On touch screens, press and hold a square to place or remove a flag instead.<br>
+    Your first click is always safe. Reveal every safe square to win — don't hit a mine!<br>
+    Win a game and your clear time is compared against your best time, saved on this device.
   </p>
 
   <script src="game.js"></script>
