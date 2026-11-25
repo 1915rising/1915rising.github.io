@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1915rising — Portfolio</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: #0b0e1a;
+    color: #e8eaf6;
+    min-height: 100vh;
+  }
+  nav {
+    display: flex; flex-wrap: wrap; gap: 8px 22px; justify-content: center;
+    padding: 16px; border-bottom: 1px solid #262e52; background: #0e1226;
+  }
+  nav a { color: #9fc3ff; text-decoration: none; font-weight: 600; font-size: 0.95rem; }
+  nav a:hover { color: #ffd54f; }
+  nav a.here { color: #ffd54f; }
+  header { text-align: center; padding: 44px 16px 8px; }
+  header h1 {
+    font-size: 2.6rem; letter-spacing: 2px; color: #ffd54f;
+    text-shadow: 0 0 18px rgba(255, 213, 79, 0.35);
+  }
+  header p { color: #9fa8c9; margin-top: 8px; font-size: 1.05rem; }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 0 20px; }
+  .intro { color: #b8bedd; line-height: 1.6; font-size: 1rem; margin-top: 18px; }
+  h2.section {
+    margin: 34px auto 0; font-size: 1.15rem; letter-spacing: 1px;
+    text-transform: uppercase; color: #9fc3ff;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px; margin: 18px auto; padding-bottom: 10px;
+  }
+  .card {
+    background: #151a30; border: 1px solid #262e52; border-radius: 12px;
+    padding: 22px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .card h3 { font-size: 1.2rem; color: #fff; }
+  .card .tag {
+    align-self: flex-start; font-size: 0.72rem; letter-spacing: 1px;
+    text-transform: uppercase; background: #262e52; color: #9fc3ff;
+    border-radius: 20px; padding: 3px 10px;
+  }
+  .card p { color: #b8bedd; font-size: 0.95rem; line-height: 1.45; flex: 1; }
+  .card a {
+    text-align: center; text-decoration: none; font-weight: 600;
+    border-radius: 8px; padding: 10px;
+  }
+  .play { background: #ffd54f; color: #141414; }
+  .play:hover { background: #ffca28; }
+  .code { background: transparent; color: #9fc3ff; border: 1px solid #3a467a; }
+  .code:hover { background: #1d2444; }
+  ul.tight { color: #b8bedd; line-height: 1.6; padding-left: 20px; margin-top: 12px; }
+  ul.tight a { color: #9fc3ff; }
+  footer {
+    text-align: center; color: #5f6890; font-size: 0.85rem;
+    padding: 16px 16px 36px;
+  }
+  footer a { color: #9fc3ff; }
+</style>
+</head>
+<body>
+  <nav>
+    <a href="../">1915 Arcade</a>
+    <a href="./" class="here">Portfolio</a>
+    <a href="../rts/">RTS Project</a>
+    <a href="../resume/">Resume</a>
+    <a href="https://github.com/1915rising">GitHub</a>
+  </nav>
+
+  <header>
+    <h1>1915RISING</h1>
+    <p>Open source contributor · Independent developer · Builder of small, verified tools</p>
+  </header>
+
+  <div class="wrap">
+    <p class="intro">
+      I fix bugs in other people's libraries, build the tools I wish existed, and ship small
+      games to prove out new languages. Everything below is public and verifiable: merged
+      pull requests, published repositories, and playable builds. The working standard is
+      simple — reproduce it, fix it, test it, and cross-check the result before calling it done.
+    </p>
+
+    <h2 class="section">Merged upstream</h2>
+    <div class="grid">
+      <div class="card">
+        <span class="tag">fontTools · Python</span>
+        <h3>Composite glyph fix</h3>
+        <p>Pull request #4453, merged: fixed composite glyphs in the font subsetter keeping
+        stale component glyph IDs for bitmap color fonts (EBDT/CBDT). Credited first in the
+        project's contributor acknowledgments.</p>
+        <a class="code" href="https://github.com/fonttools/fonttools/pull/4453">View the PR</a>
+      </div>
+      <div class="card">
+        <span class="tag">ezdxf · Python</span>
+        <h3>CAD library fix</h3>
+        <p>Pull request #1482, merged into ezdxf, a widely used library for working with
+        DXF CAD files.</p>
+        <a class="code" href="https://github.com/mozman/ezdxf/pull/1482">View the PR</a>
+      </div>
+      <div class="card">
+        <span class="tag">In review</span>
+        <h3>More fixes in flight</h3>
+        <p>Further pull requests are open and under review across trimesh, meshio, UnityPy,
+        MetPy, glTF-Blender-IO, and others — each with a reproduction and tests.</p>
+        <a class="code" href="https://github.com/1915rising">Follow on GitHub</a>
+      </div>
+    </div>
+
+    <h2 class="section">The doctor tools</h2>
+    <p class="intro">A family of small, single-purpose mesh and asset tools — each one built
+    because the existing option was paywalled or missing, each one verified against real files.</p>
+    <div class="grid">
+      <div class="card">
+        <span class="tag">Python · MIT</span>
+        <h3>ripdoctor</h3>
+        <p>Diagnoses ripped game-asset meshes and reports the defects that break them downstream.</p>
+        <a class="code" href="https://github.com/1915rising/ripdoctor">Repository</a>
+      </div>
+      <div class="card">
+        <span class="tag">Python · MIT</span>
+        <h3>stl-doctor</h3>
+        <p>Checks STL files for the problems that ruin prints and conversions, before they cost you a print.</p>
+        <a class="code" href="https://github.com/1915rising/stl-doctor">Repository</a>
+      </div>
+      <div class="card">
+        <span class="tag">Python · MIT</span>
+        <h3>ai-mesh-cleanup</h3>
+        <p>Cleans up AI-generated meshes — decimation and colour transfer — so they survive real pipelines.</p>
+        <a class="code" href="https://github.com/1915rising/ai-mesh-cleanup">Repository</a>
+      </div>
+      <div class="card">
+        <span class="tag">Blender · MIT</span>
+        <h3>viseme-doctor</h3>
+        <p>Blender add-on that verifies all 15 standard viseme shape keys plus blink keys on an avatar mesh.</p>
+        <a class="code" href="https://github.com/1915rising/viseme-doctor">Repository</a>
+      </div>
+      <div class="card">
+        <span class="tag">Blender · GPL-3.0</span>
+        <h3>orient-doctor</h3>
+        <p>Visualises mesh orientation vectors so flipped and inconsistent geometry is obvious at a glance.</p>
+        <a class="code" href="https://github.com/1915rising/orient-doctor">Repository</a>
+      </div>
+      <div class="card">
+        <span class="tag">Python · MIT</span>
+        <h3>fit-doctor</h3>
+        <p>Checks how a garment or accessory mesh actually fits a body mesh, instead of eyeballing it.</p>
+        <a class="code" href="https://github.com/1915rising/fit-doctor">Repository</a>
+      </div>
+      <div class="card">
+        <span class="tag">Python · MIT</span>
+        <h3>roundtrip-doctor</h3>
+        <p>Gates data moving between Blender versions, so geometry survives a round trip that file formats alone can't promise.</p>
+        <a class="code" href="https://github.com/1915rising/roundtrip-doctor">Repository</a>
+      </div>
+      <div class="card">
+        <span class="tag">Python · MIT</span>
+        <h3>triage-doctor</h3>
+        <p>First-pass triage for mesh files: a fast, structured report of what is wrong and how badly.</p>
+        <a class="code" href="https://github.com/1915rising/triage-doctor">Repository</a>
+      </div>
+      <div class="card">
+        <span class="tag">Python · MIT</span>
+        <h3>axis-doctor</h3>
+        <p>Verifies axis conventions on exported models, catching the silent Y/Z swaps that break rigs.</p>
+        <a class="code" href="https://github.com/1915rising/axis-doctor">Repository</a>
+      </div>
+      <div class="card">
+        <span class="tag">Python · MIT</span>
+        <h3>print-doctor</h3>
+        <p>Print-readiness checks for miniature models, validated by voxel comparison against the source mesh.</p>
+        <a class="code" href="https://github.com/1915rising/print-doctor">Repository</a>
+      </div>
+      <div class="card">
+        <span class="tag">Python · MIT</span>
+        <h3>doctor-chain</h3>
+        <p>Runs the doctor tools as one pipeline, each in its own process, and merges the reports.</p>
+        <a class="code" href="https://github.com/1915rising/doctor-chain">Repository</a>
+      </div>
+    </div>
+
+    <h2 class="section">Thirteen languages, each with proof</h2>
+    <p class="intro">A language only counts if there is a public project behind it. Each of
+    these links to one:</p>
+    <ul class="tight">
+      <li><strong>Python</strong> — the doctor tools above, plus <a href="https://github.com/1915rising/ironpit-python">Ironpit</a>, a terminal arena battler</li>
+      <li><strong>JavaScript</strong> — <a href="https://github.com/1915rising/starfall-js">Starfall</a> and the 13 browser games on this site</li>
+      <li><strong>TypeScript</strong> — <a href="https://github.com/1915rising/gridfall-ts">Gridfall</a>, a 5x5 grid tactics game</li>
+      <li><strong>C#</strong> — <a href="https://github.com/1915rising/delver-csharp">Delver</a>, a text roguelike, and the RTS project below</li>
+      <li><strong>Java</strong> — <a href="https://github.com/1915rising/minesweeper-java">Minesweeper</a> for the terminal</li>
+      <li><strong>Rust</strong> — <a href="https://github.com/1915rising/kingsroad-rust">Kingsroad</a>, a dice race</li>
+      <li><strong>Go</strong> — <a href="https://github.com/1915rising/coldtrail-go">Coldtrail</a>, a number-guessing duel</li>
+      <li><strong>C</strong> — <a href="https://github.com/1915rising/wordfall-c">Wordfall</a>, a word scramble</li>
+      <li><strong>C++</strong> — <a href="https://github.com/1915rising/stonevault-cpp">Stonevault</a>, a tiny dungeon crawler</li>
+      <li><strong>Lua</strong> — <a href="https://github.com/1915rising/lantern-hollow-lua">Lantern Hollow</a>, a mini text adventure</li>
+      <li><strong>Luau</strong> — <a href="https://github.com/1915rising/sky-obby">Sky Obby</a>, a code-generated Roblox obstacle course</li>
+      <li><strong>Ruby</strong> — <a href="https://github.com/1915rising/gemcart-ruby">Gemcart</a>, push-your-luck dice</li>
+      <li><strong>Zig</strong> — <a href="https://github.com/1915rising/cache-hunt-zig">Cache Hunt</a>, a grid deduction game</li>
+    </ul>
+
+    <h2 class="section">Featured: fileprobe</h2>
+    <div class="grid">
+      <div class="card">
+        <span class="tag">13 Languages · Tool</span>
+        <h3>One spec, thirteen implementations</h3>
+        <p>fileprobe is a tiny stdin byte-stats tool — bytes, lines, words, and an FNV-1a hash —
+        specified once and implemented independently in all 13 languages above. A shared test
+        corpus runs every implementation against the same inputs: all 13 outputs are verified
+        byte-identical. It is the cross-check habit, turned into a repository.</p>
+        <a class="play" href="https://github.com/1915rising/fileprobe">View fileprobe</a>
+      </div>
+      <div class="card">
+        <span class="tag">Unity · C#</span>
+        <h3>Real-time strategy project</h3>
+        <p>A full RTS built in Unity around a deterministic simulation core: hash-pinned replay
+        tests, vertex-animation crowd rendering, a complete game shell, and a headless
+        self-test pipeline.</p>
+        <a class="code" href="../rts/">Project page</a>
+      </div>
+      <div class="card">
+        <span class="tag">Games</span>
+        <h3>1915 Arcade</h3>
+        <p>Thirteen original browser games, free forever, plus the standalone terminal games
+        linked from the arcade's project section.</p>
+        <a class="code" href="../">Play the arcade</a>
+      </div>
+    </div>
+
+    <h2 class="section">Contact</h2>
+    <p class="intro">Everything runs through GitHub:
+    <a href="https://github.com/1915rising" style="color:#9fc3ff;">github.com/1915rising</a> —
+    issues and pull requests welcome.</p>
+  </div>
+
+  <footer>
+    <a href="../">1915 Arcade</a> · <a href="../rts/">RTS Project</a> · <a href="../resume/">Resume</a> · Built by <a href="https://github.com/1915rising">1915rising</a>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1915rising — Resume</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: #0b0e1a;
+    color: #e8eaf6;
+    min-height: 100vh;
+  }
+  nav {
+    display: flex; flex-wrap: wrap; gap: 8px 22px; justify-content: center;
+    padding: 16px; border-bottom: 1px solid #262e52; background: #0e1226;
+  }
+  nav a { color: #9fc3ff; text-decoration: none; font-weight: 600; font-size: 0.95rem; }
+  nav a:hover { color: #ffd54f; }
+  nav a.here { color: #ffd54f; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 20px 10px; }
+  header { text-align: center; padding: 44px 16px 4px; }
+  header h1 {
+    font-size: 2.4rem; letter-spacing: 2px; color: #ffd54f;
+    text-shadow: 0 0 18px rgba(255, 213, 79, 0.35);
+  }
+  header p { color: #9fa8c9; margin-top: 8px; font-size: 1.02rem; }
+  header p a { color: #9fc3ff; }
+  h2.section {
+    margin: 32px auto 0; font-size: 1.1rem; letter-spacing: 1px;
+    text-transform: uppercase; color: #9fc3ff;
+    border-bottom: 1px solid #262e52; padding-bottom: 6px;
+  }
+  p.body { color: #b8bedd; line-height: 1.6; margin-top: 12px; }
+  .role { margin-top: 16px; }
+  .role h3 { color: #fff; font-size: 1.08rem; }
+  .role .meta { color: #5f6890; font-size: 0.85rem; margin-top: 2px; }
+  ul.tight { color: #b8bedd; line-height: 1.6; padding-left: 20px; margin-top: 8px; }
+  ul.tight a { color: #9fc3ff; }
+  footer {
+    text-align: center; color: #5f6890; font-size: 0.85rem;
+    padding: 20px 16px 36px;
+  }
+  footer a { color: #9fc3ff; }
+</style>
+</head>
+<body>
+  <nav>
+    <a href="../">1915 Arcade</a>
+    <a href="../portfolio/">Portfolio</a>
+    <a href="../rts/">RTS Project</a>
+    <a href="./" class="here">Resume</a>
+    <a href="https://github.com/1915rising">GitHub</a>
+  </nav>
+
+  <header>
+    <h1>1915RISING</h1>
+    <p>Open Source Contributor · Independent Developer ·
+    <a href="https://github.com/1915rising">github.com/1915rising</a></p>
+  </header>
+
+  <div class="wrap">
+    <h2 class="section">Summary</h2>
+    <p class="body">
+      Developer with merged code in production open source libraries, eleven published
+      developer tools, and a game portfolio spanning thirteen programming languages — every
+      claim on this page links to public, verifiable work. Working method: reproduce first,
+      fix at the right layer, verify against the known-good base, and ship with tests.
+    </p>
+
+    <h2 class="section">Technical skills</h2>
+    <ul class="tight">
+      <li><strong>Languages:</strong> Python, JavaScript, TypeScript, C#, Java, Rust, Go,
+      C, C++, Lua, Luau, Ruby, Zig — each backed by a public project.</li>
+      <li><strong>Tools &amp; platforms:</strong> Git &amp; GitHub, Unity, Blender
+      (including Python automation), .NET, Node.js.</li>
+      <li><strong>Specialities:</strong> mesh and file-format tooling, deterministic
+      simulation, automated test gates, cross-language verification.</li>
+    </ul>
+
+    <h2 class="section">Open source experience</h2>
+    <div class="role">
+      <h3>Open Source Contributor — GitHub</h3>
+      <div class="meta">2026 – Present</div>
+      <ul class="tight">
+        <li><strong>Merged:</strong> <a href="https://github.com/fonttools/fonttools/pull/4453">fontTools PR #4453</a> —
+        fixed composite glyph handling in the font subsetter for bitmap color fonts
+        (EBDT/CBDT); credited first in the project's contributor acknowledgments.</li>
+        <li><strong>Merged:</strong> <a href="https://github.com/mozman/ezdxf/pull/1482">ezdxf PR #1482</a> —
+        fix in the DXF CAD file library.</li>
+        <li><strong>In review:</strong> pull requests open across trimesh, meshio, UnityPy,
+        MetPy, glTF-Blender-IO, and other libraries, each with reproduction and tests.</li>
+        <li><strong>Authored:</strong> eleven published developer tools for 3D mesh repair,
+        Blender workflows, and file-format conversion — ripdoctor, stl-doctor,
+        ai-mesh-cleanup, viseme-doctor, orient-doctor, fit-doctor, roundtrip-doctor,
+        triage-doctor, axis-doctor, print-doctor, and the doctor-chain orchestrator.</li>
+        <li><strong>Cross-language tool:</strong> <a href="https://github.com/1915rising/fileprobe">fileprobe</a> —
+        one file-analysis specification implemented in 13 programming languages, all 13
+        implementations verified byte-identical against a shared test corpus.</li>
+        <li><strong>Game portfolio:</strong> 13 playable browser games plus standalone game
+        projects across 13 programming languages; playable site at
+        <a href="../">1915 Arcade</a>.</li>
+      </ul>
+    </div>
+
+    <h2 class="section">Projects</h2>
+    <div class="role">
+      <h3>Real-Time Strategy Game — Unity / C#</h3>
+      <ul class="tight">
+        <li>Deterministic simulation core with hash-pinned replay tests, verified
+        bit-identical across three runtimes.</li>
+        <li>Vertex-animation crowd rendering: 85 fps sustained at ~590 figures on
+        integrated graphics.</li>
+        <li>Full game shell — menus, match setup, settings, minimap, cheat system — with
+        automated compile and test gates and a headless editor self-test pipeline.</li>
+        <li><a href="../rts/">Full project page</a></li>
+      </ul>
+    </div>
+    <div class="role">
+      <h3>1915 Arcade — JavaScript</h3>
+      <ul class="tight">
+        <li>Thirteen original browser games, each playtested headlessly before shipping.</li>
+        <li><a href="../">Play them here</a></li>
+      </ul>
+    </div>
+
+    <h2 class="section">Contact</h2>
+    <p class="body">GitHub is the front door:
+    <a href="https://github.com/1915rising" style="color:#9fc3ff;">github.com/1915rising</a></p>
+  </div>
+
+  <footer>
+    <a href="../">1915 Arcade</a> · <a href="../portfolio/">Portfolio</a> · <a href="../rts/">RTS Project</a> · Built by <a href="https://github.com/1915rising">1915rising</a>
+  </footer>
+</body>
+</html>

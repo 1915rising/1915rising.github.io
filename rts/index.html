@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Real-Time Strategy Project — 1915rising</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: #0b0e1a;
+    color: #e8eaf6;
+    min-height: 100vh;
+  }
+  nav {
+    display: flex; flex-wrap: wrap; gap: 8px 22px; justify-content: center;
+    padding: 16px; border-bottom: 1px solid #262e52; background: #0e1226;
+  }
+  nav a { color: #9fc3ff; text-decoration: none; font-weight: 600; font-size: 0.95rem; }
+  nav a:hover { color: #ffd54f; }
+  nav a.here { color: #ffd54f; }
+  header { text-align: center; padding: 44px 16px 8px; }
+  header h1 {
+    font-size: 2.2rem; letter-spacing: 2px; color: #ffd54f;
+    text-shadow: 0 0 18px rgba(255, 213, 79, 0.35);
+  }
+  header p { color: #9fa8c9; margin-top: 8px; font-size: 1.05rem; }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 0 20px; }
+  .intro { color: #b8bedd; line-height: 1.6; font-size: 1rem; margin-top: 18px; }
+  h2.section {
+    margin: 34px auto 0; font-size: 1.15rem; letter-spacing: 1px;
+    text-transform: uppercase; color: #9fc3ff;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px; margin: 18px auto; padding-bottom: 10px;
+  }
+  .card {
+    background: #151a30; border: 1px solid #262e52; border-radius: 12px;
+    padding: 22px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .card h3 { font-size: 1.2rem; color: #fff; }
+  .card .stat { font-size: 2rem; color: #ffd54f; font-weight: 700; }
+  .card .tag {
+    align-self: flex-start; font-size: 0.72rem; letter-spacing: 1px;
+    text-transform: uppercase; background: #262e52; color: #9fc3ff;
+    border-radius: 20px; padding: 3px 10px;
+  }
+  .card p { color: #b8bedd; font-size: 0.95rem; line-height: 1.45; flex: 1; }
+  ul.tight { color: #b8bedd; line-height: 1.65; padding-left: 20px; margin-top: 12px; }
+  footer {
+    text-align: center; color: #5f6890; font-size: 0.85rem;
+    padding: 16px 16px 36px;
+  }
+  footer a { color: #9fc3ff; }
+</style>
+</head>
+<body>
+  <nav>
+    <a href="../">1915 Arcade</a>
+    <a href="../portfolio/">Portfolio</a>
+    <a href="./" class="here">RTS Project</a>
+    <a href="../resume/">Resume</a>
+    <a href="https://github.com/1915rising">GitHub</a>
+  </nav>
+
+  <header>
+    <h1>REAL-TIME STRATEGY PROJECT</h1>
+    <p>Unity · C# · Deterministic simulation · Crowd rendering</p>
+  </header>
+
+  <div class="wrap">
+    <p class="intro">
+      A real-time strategy game built in Unity, engineered simulation-first. The game logic
+      lives in a standalone, deterministic C# simulation core that runs identically inside
+      the engine, in a plain test harness, and in headless self-tests — the renderer is a
+      view onto the sim, never the source of truth. Free-form base building, squad-based
+      infantry, hero units, and large visible armies are the design pillars.
+    </p>
+
+    <h2 class="section">Measured results</h2>
+    <div class="grid">
+      <div class="card">
+        <span class="stat">85 fps</span>
+        <h3>Mid-clash performance</h3>
+        <p>Sustained frame rate with ~590 animated figures on screen, measured in play on
+        integrated laptop graphics — comfortably above the 60 fps gate.</p>
+      </div>
+      <div class="card">
+        <span class="stat">968</span>
+        <h3>Figures at spawn</h3>
+        <p>Full 150-vs-150 squad deployment renders every figure from the first frame;
+        the crowd is the game, not a backdrop.</p>
+      </div>
+      <div class="card">
+        <span class="stat">49&times;</span>
+        <h3>Smaller crowd bakes</h3>
+        <p>Decimate-first vertex-animation baking cut one crowd archetype from 5.25 MB to
+        107 KB, with surface error under 3 mm against the full-resolution source.</p>
+      </div>
+    </div>
+
+    <h2 class="section">Engineering highlights</h2>
+    <ul class="tight">
+      <li><strong>Deterministic simulation core.</strong> Fixed-tick sim with hash-pinned
+      replay tests: the same scripted match produces the identical state hash in the plain
+      .NET harness, inside Unity, and in a second engine's runtime — bit for bit.</li>
+      <li><strong>VAT crowd rendering.</strong> Animation is baked to vertex-animation
+      textures and played back in the shader, so hundreds of figures animate with no
+      per-unit skeleton cost. A pooled renderer is the shipping path; an indirect-draw
+      path was investigated, measured, and set aside on evidence.</li>
+      <li><strong>Complete game shell.</strong> Main menu, match setup, five-tab settings
+      persisted to JSON, minimap with an alert feed, control groups, and a full cheat-code
+      system — all commands enter the sim as tick-stamped orders, so cheats and replays
+      obey the same determinism rules as normal play.</li>
+      <li><strong>Automated gates.</strong> Roslyn compile checks, a scripted test suite,
+      map-solvability gates, and performance gates run before any build is called good.</li>
+      <li><strong>Headless self-test pipeline.</strong> The editor itself is driven over a
+      local API to enter play mode, inspect live match state, and capture screenshots —
+      the same pipeline that caught and verified the fix for a renderer bug that left
+      units invisible while the simulation ran perfectly underneath.</li>
+    </ul>
+
+    <h2 class="section">Status</h2>
+    <p class="intro">
+      The full game loop is complete and playable end to end: menus, setup, economy,
+      production, combat, and win/lose flow. Current work is the art and polish pass —
+      production crowd-tier meshes replacing the placeholder figures, plus order-feedback
+      markers and selection polish.
+    </p>
+  </div>
+
+  <footer>
+    <a href="../">1915 Arcade</a> · <a href="../portfolio/">Portfolio</a> · <a href="../resume/">Resume</a> · Built by <a href="https://github.com/1915rising">1915rising</a>
+  </footer>
+</body>
+</html>
